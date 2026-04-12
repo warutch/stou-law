@@ -127,6 +127,16 @@ tr:hover { background: #f8f9fa; }
 .edit-row { display: flex; gap: 4px; }
 .edit-row button { padding: 2px 6px; font-size: .75rem; }
 
+/* Course Rows */
+.course-row { background:#f8f9fa; border:1px solid var(--border); border-radius:var(--radius); padding:10px; display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:end; }
+.course-row .cr-top { grid-column:1/-1; display:grid; grid-template-columns:140px 1fr; gap:6px; }
+.course-row .cr-bottom { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:6px; align-items:end; }
+.course-row input, .course-row select { padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius); font-size:.85rem; }
+.course-row label { font-size:.7rem; color:var(--text-light); margin-bottom:2px; display:block; }
+.course-row .cr-del { background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem; padding:4px 8px; align-self:center; }
+.course-row .cr-del:hover { background:#fadbd8; border-radius:4px; }
+@media (max-width:600px) { .course-row .cr-top, .course-row .cr-bottom { grid-template-columns:1fr; } }
+
 /* Fee Rows */
 .fee-row { display:flex; gap:6px; align-items:center; }
 .fee-row input { flex:1; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius); font-size:.85rem; }
@@ -263,40 +273,19 @@ tr:hover { background: #f8f9fa; }
               <option value="certificate">สัมฤทธิบัตร</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>รหัสวิชา *</label>
-            <input type="text" id="regCourse" list="courseList" required placeholder="พิมพ์รหัสหรือชื่อวิชา" autocomplete="off" oninput="onCourseInput()" onchange="onCourseInput()">
+          <div style="grid-column:1/-1">
+            <label style="font-size:.8rem;color:var(--text-light);font-weight:500;margin-bottom:4px;display:block">ชุดวิชาที่ลงทะเบียน *</label>
+            <div id="courseRows" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+            <button type="button" class="btn btn-sm btn-outline" onclick="addCourseRow()" style="margin-top:8px">+ เพิ่มชุดวิชา</button>
             <datalist id="courseList"></datalist>
           </div>
-          <div class="form-group">
-            <label>ชื่อวิชา</label>
-            <input type="text" id="regCourseName" readonly style="background:#f8f9fa">
-          </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label>ค่าธรรมเนียม (บาท)</label>
+          <div style="grid-column:1/-1">
+            <label style="font-size:.8rem;color:var(--text-light);font-weight:500;margin-bottom:4px;display:block">ค่าธรรมเนียม (บาท)</label>
             <div id="feeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
             <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
               <button type="button" class="btn btn-sm btn-outline" onclick="addFeeRow()">+ เพิ่มรายการ</button>
               <span style="font-size:.85rem;font-weight:600;color:var(--primary)" id="feeTotalDisplay">รวม: 0 บาท</span>
             </div>
-          </div>
-          <div class="form-group">
-            <label>วันสอบ</label>
-            <input type="date" id="regExamDate">
-          </div>
-          <div class="form-group">
-            <label>เวลาสอบ</label>
-            <input type="text" id="regExamTime" placeholder="เช่น 09:00-12:00">
-          </div>
-          <div class="form-group">
-            <label>ผลสอบ</label>
-            <select id="regGrade">
-              <option value="pending">รอผล</option>
-              <option value="H">H (เกียรตินิยม)</option>
-              <option value="S">S (ผ่าน)</option>
-              <option value="S*">S* (ผ่านแบบมีเงื่อนไข)</option>
-              <option value="U">U (ไม่ผ่าน)</option>
-            </select>
           </div>
         </div>
         <div class="btn-row">
@@ -1156,6 +1145,68 @@ function onCourseInput() {
   }
 }
 
+// ===== COURSE ROWS =====
+function addCourseRow(data) {
+  const container = document.getElementById('courseRows');
+  const row = document.createElement('div');
+  row.className = 'course-row';
+  row.innerHTML = `
+    <div class="cr-top">
+      <div><label>รหัสวิชา</label><input type="text" class="cr-code" list="courseList" placeholder="เช่น 41211" autocomplete="off" value="${data?.courseCode||''}" oninput="onCrCodeInput(this)" onchange="onCrCodeInput(this)"></div>
+      <div><label>ชื่อวิชา</label><input type="text" class="cr-name" placeholder="ชื่อวิชา" value="${data?.courseName||''}" ${data?.courseName?'readonly style=background:#f8f9fa':''}></div>
+    </div>
+    <div class="cr-bottom">
+      <div><label>วันสอบ</label><input type="date" class="cr-exam-date" value="${data?.examDate||''}"></div>
+      <div><label>เวลาสอบ</label><input type="text" class="cr-exam-time" placeholder="09:00-12:00" value="${data?.examTime||''}"></div>
+      <div><label>ผลสอบ</label><select class="cr-grade"><option value="pending">รอผล</option><option value="H">H</option><option value="S">S</option><option value="S*">S*</option><option value="U">U</option></select></div>
+      <button type="button" class="cr-del" onclick="this.closest('.course-row').remove()">✕</button>
+    </div>`;
+  if (data?.grade) row.querySelector('.cr-grade').value = data.grade;
+  container.appendChild(row);
+  if (data?.courseCode && ALL_COURSES[data.courseCode]) {
+    const nameEl = row.querySelector('.cr-name');
+    nameEl.value = ALL_COURSES[data.courseCode].name;
+    nameEl.readOnly = true;
+    nameEl.style.background = '#f8f9fa';
+  }
+}
+function onCrCodeInput(el) {
+  const raw = el.value.trim();
+  const code = raw.split('—')[0].split(' ')[0].trim();
+  const nameEl = el.closest('.course-row').querySelector('.cr-name');
+  if (ALL_COURSES[code]) {
+    el.value = code;
+    nameEl.value = ALL_COURSES[code].name;
+    nameEl.readOnly = true;
+    nameEl.style.background = '#f8f9fa';
+  } else if (/^\d{5}$/.test(code)) {
+    nameEl.readOnly = false;
+    nameEl.style.background = '';
+  } else {
+    nameEl.value = '';
+    nameEl.readOnly = true;
+    nameEl.style.background = '#f8f9fa';
+  }
+}
+function getCourseRows() {
+  const rows = document.querySelectorAll('#courseRows .course-row');
+  return Array.from(rows).map(r => ({
+    courseCode: r.querySelector('.cr-code').value.trim().split('—')[0].split(' ')[0].trim(),
+    courseName: r.querySelector('.cr-name').value.trim(),
+    examDate: r.querySelector('.cr-exam-date').value,
+    examTime: r.querySelector('.cr-exam-time').value.trim(),
+    grade: r.querySelector('.cr-grade').value,
+  })).filter(c => c.courseCode);
+}
+function setCourseRows(items) {
+  document.getElementById('courseRows').innerHTML = '';
+  if (items && items.length > 0) {
+    items.forEach(c => addCourseRow(c));
+  } else {
+    addCourseRow();
+  }
+}
+
 // ===== FEE ROWS =====
 function addFeeRow(label, amount) {
   const container = document.getElementById('feeRows');
@@ -1193,42 +1244,51 @@ function setFeeItems(items) {
 function saveRegistration(e) {
   e.preventDefault();
   const data = getData();
-  const rawCourse = document.getElementById('regCourse').value.trim();
-  const courseCode = rawCourse.split('—')[0].split(' ')[0].trim();
-  if (!courseCode) { alert('กรุณากรอกรหัสวิชา'); return; }
+  const courses = getCourseRows();
+  if (courses.length === 0) { alert('กรุณาเพิ่มชุดวิชาอย่างน้อย 1 วิชา'); return; }
   const feeItems = getFeeItems();
   const totalFee = feeItems.reduce((s, f) => s + f.amount, 0);
-  const reg = {
-    id: editingRegId || genId(),
+  const base = {
     academicYear: document.getElementById('regYear').value.trim(),
     semester: document.getElementById('regSemester').value,
     batch: document.getElementById('regBatch').value.trim(),
     batchCode: document.getElementById('regBatchCode').value.trim(),
     studentId: document.getElementById('regStudentId').value.trim(),
-    courseCode: courseCode === 'free' ? 'FREE' : courseCode,
-    courseName: document.getElementById('regCourseName').value.trim(),
     program: document.getElementById('regProgram').value,
     fee: totalFee,
     feeItems: feeItems,
-    examDate: document.getElementById('regExamDate').value,
-    examTime: document.getElementById('regExamTime').value.trim(),
-    grade: document.getElementById('regGrade').value,
-    createdAt: editingRegId ? (data.registrations.find(r => r.id === editingRegId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
   };
+  // Generate a shared regGroupId so we know these registrations belong together
+  const regGroupId = editingRegId ? (data.registrations.find(r => r.id === editingRegId)?.regGroupId || genId()) : genId();
 
   if (editingRegId) {
-    const idx = data.registrations.findIndex(r => r.id === editingRegId);
-    if (idx >= 0) data.registrations[idx] = reg;
-    editingRegId = null;
-    document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
-  } else {
-    data.registrations.push(reg);
+    // When editing, remove all records in the same group, then re-add
+    const oldReg = data.registrations.find(r => r.id === editingRegId);
+    const oldGroupId = oldReg?.regGroupId || editingRegId;
+    data.registrations = data.registrations.filter(r => r.regGroupId !== oldGroupId && r.id !== editingRegId);
   }
 
+  courses.forEach(c => {
+    data.registrations.push({
+      ...base,
+      id: genId(),
+      regGroupId: regGroupId,
+      courseCode: c.courseCode === 'free' ? 'FREE' : c.courseCode,
+      courseName: c.courseName,
+      examDate: c.examDate,
+      examTime: c.examTime,
+      grade: c.grade,
+      createdAt: new Date().toISOString(),
+    });
+  });
+
+  editingRegId = null;
+  document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
+
   // Save settings for auto-fill
-  if (reg.studentId) data.settings.studentId = reg.studentId;
-  if (reg.batchCode) data.settings.batchCode = reg.batchCode;
-  if (reg.batch) data.settings.batch = reg.batch;
+  if (base.studentId) data.settings.studentId = base.studentId;
+  if (base.batchCode) data.settings.batchCode = base.batchCode;
+  if (base.batch) data.settings.batch = base.batch;
 
   saveData(data);
   resetRegForm();
@@ -1242,6 +1302,7 @@ function resetRegForm() {
   document.getElementById('regCourseName').readOnly = true;
   document.getElementById('regCourseName').style.background = '#f8f9fa';
   document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
+  setCourseRows(null);
   setFeeItems(null);
   // Auto-fill from settings
   const data = getData();
@@ -1315,19 +1376,16 @@ function editRegistration(id) {
   } else {
     setFeeItems(null);
   }
-  document.getElementById('regExamDate').value = r.examDate || '';
-  document.getElementById('regExamTime').value = r.examTime || '';
-  document.getElementById('regGrade').value = r.grade;
-
-  const courseSelect = document.getElementById('regCourse');
-  if (r.courseCode === 'FREE') {
-    courseSelect.value = 'free';
-    document.getElementById('regCourseName').readOnly = false;
-    document.getElementById('regCourseName').style.background = '';
-  } else {
-    courseSelect.value = r.courseCode;
-  }
-  document.getElementById('regCourseName').value = r.courseName;
+  // Load all courses in the same group
+  const groupId = r.regGroupId || id;
+  const groupCourses = data.registrations.filter(x => x.regGroupId === groupId || x.id === id);
+  setCourseRows(groupCourses.map(c => ({
+    courseCode: c.courseCode,
+    courseName: c.courseName,
+    examDate: c.examDate,
+    examTime: c.examTime,
+    grade: c.grade,
+  })));
   document.getElementById('regSubmitBtn').textContent = 'อัปเดตการลงทะเบียน';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
