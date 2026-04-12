@@ -129,8 +129,8 @@ tr:hover { background: #f8f9fa; }
 
 /* Course Rows */
 .course-row { background:#f8f9fa; border:1px solid var(--border); border-radius:var(--radius); padding:10px; display:grid; grid-template-columns:1fr 1fr auto; gap:6px; align-items:end; }
-.course-row .cr-top { grid-column:1/-1; display:grid; grid-template-columns:140px 1fr; gap:6px; }
-.course-row .cr-bottom { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:6px; align-items:end; }
+.course-row .cr-top { grid-column:1/-1; display:grid; grid-template-columns:120px 1fr 90px; gap:6px; }
+.course-row .cr-bottom { grid-column:1/-1; display:grid; grid-template-columns:1fr auto auto auto auto; gap:6px; align-items:end; }
 .course-row input, .course-row select { padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius); font-size:.85rem; }
 .course-row label { font-size:.7rem; color:var(--text-light); margin-bottom:2px; display:block; }
 .course-row .cr-del { background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem; padding:4px 8px; align-self:center; }
@@ -1147,6 +1147,13 @@ function onCourseInput() {
 
 // ===== COURSE ROWS =====
 function addCourseRow(data) {
+  // Parse examTime "09:00-12:00" into start/end
+  let timeStart = '', timeEnd = '';
+  if (data?.examTime) {
+    const parts = data.examTime.split('-');
+    timeStart = (parts[0]||'').trim();
+    timeEnd = (parts[1]||'').trim();
+  }
   const container = document.getElementById('courseRows');
   const row = document.createElement('div');
   row.className = 'course-row';
@@ -1154,10 +1161,12 @@ function addCourseRow(data) {
     <div class="cr-top">
       <div><label>รหัสวิชา</label><input type="text" class="cr-code" list="courseList" placeholder="เช่น 41211" autocomplete="off" value="${data?.courseCode||''}" oninput="onCrCodeInput(this)" onchange="onCrCodeInput(this)"></div>
       <div><label>ชื่อวิชา</label><input type="text" class="cr-name" placeholder="ชื่อวิชา" value="${data?.courseName||''}" ${data?.courseName?'readonly style=background:#f8f9fa':''}></div>
+      <div style="max-width:100px"><label>ค่าชุดวิชา</label><input type="number" class="cr-fee" placeholder="บาท" min="0" value="${data?.courseFee||''}"></div>
     </div>
     <div class="cr-bottom">
       <div><label>วันสอบ</label><input type="date" class="cr-exam-date" value="${data?.examDate||''}"></div>
-      <div><label>เวลาสอบ</label><input type="text" class="cr-exam-time" placeholder="09:00-12:00" value="${data?.examTime||''}"></div>
+      <div><label>เริ่ม</label><input type="time" class="cr-time-start" value="${timeStart}"></div>
+      <div><label>ถึง</label><input type="time" class="cr-time-end" value="${timeEnd}"></div>
       <div><label>ผลสอบ</label><select class="cr-grade"><option value="pending">รอผล</option><option value="H">H</option><option value="S">S</option><option value="S*">S*</option><option value="U">U</option></select></div>
       <button type="button" class="cr-del" onclick="this.closest('.course-row').remove()">✕</button>
     </div>`;
@@ -1190,13 +1199,18 @@ function onCrCodeInput(el) {
 }
 function getCourseRows() {
   const rows = document.querySelectorAll('#courseRows .course-row');
-  return Array.from(rows).map(r => ({
-    courseCode: r.querySelector('.cr-code').value.trim().split('—')[0].split(' ')[0].trim(),
-    courseName: r.querySelector('.cr-name').value.trim(),
-    examDate: r.querySelector('.cr-exam-date').value,
-    examTime: r.querySelector('.cr-exam-time').value.trim(),
-    grade: r.querySelector('.cr-grade').value,
-  })).filter(c => c.courseCode);
+  return Array.from(rows).map(r => {
+    const ts = r.querySelector('.cr-time-start').value;
+    const te = r.querySelector('.cr-time-end').value;
+    return {
+      courseCode: r.querySelector('.cr-code').value.trim().split('—')[0].split(' ')[0].trim(),
+      courseName: r.querySelector('.cr-name').value.trim(),
+      courseFee: Number(r.querySelector('.cr-fee').value) || 0,
+      examDate: r.querySelector('.cr-exam-date').value,
+      examTime: (ts && te) ? `${ts}-${te}` : (ts || te || ''),
+      grade: r.querySelector('.cr-grade').value,
+    };
+  }).filter(c => c.courseCode);
 }
 function setCourseRows(items) {
   document.getElementById('courseRows').innerHTML = '';
@@ -1275,6 +1289,7 @@ function saveRegistration(e) {
       regGroupId: regGroupId,
       courseCode: c.courseCode === 'free' ? 'FREE' : c.courseCode,
       courseName: c.courseName,
+      courseFee: c.courseFee,
       examDate: c.examDate,
       examTime: c.examTime,
       grade: c.grade,
