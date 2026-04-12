@@ -1352,9 +1352,6 @@ function resetRegForm() {
   document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
   setCourseRows(null);
   setFeeItems(null);
-  // Auto-fill from settings (เฉพาะรหัสนักศึกษา)
-  const data = getData();
-  if (data.settings.studentId) document.getElementById('regStudentId').value = data.settings.studentId;
 }
 
 function renderRegistrations() {
