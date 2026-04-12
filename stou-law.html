@@ -280,11 +280,23 @@ tr:hover { background:var(--primary-soft); }
       </div>
       <div class="card">
         <h2>วิชาที่กำลังเรียน / รอสอบ</h2>
-        <div id="currentCourses"><p style="color:var(--text-light);font-size:.85rem">ยังไม่มีวิชาที่กำลังเรียน</p></div>
+        <div id="currentCourses"></div>
       </div>
       <div class="card">
         <h2>ตารางสอบที่จะมาถึง</h2>
-        <div id="upcomingExams"><p style="color:var(--text-light);font-size:.85rem">ยังไม่มีตารางสอบ</p></div>
+        <div id="upcomingExams"></div>
+      </div>
+      <div class="card">
+        <h2>รอโอนชุดวิชา (สัมฤทธิบัตร)</h2>
+        <div id="pendingTransfers"></div>
+      </div>
+      <div class="card">
+        <h2>วิชาที่สอบไม่ผ่าน (ต้องลงใหม่)</h2>
+        <div id="failedCourses"></div>
+      </div>
+      <div class="card" style="grid-column:1/3">
+        <h2>สรุปค่าใช้จ่าย</h2>
+        <div id="dashExpenseSummary"></div>
       </div>
     </div>
   </div>
@@ -1037,54 +1049,98 @@ function gradeBadge(grade) {
 function renderDashboard() {
   const data = getData();
   const regs = data.registrations;
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const emptyMsg = txt => `<p style="color:var(--text-light);font-size:.85rem">${txt}</p>`;
+
+  // Classify courses
   const passedCodes = new Set();
   const studyingCodes = new Set();
-  regs.forEach(r => {
-    if (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') passedCodes.add(r.courseCode);
-  });
-  regs.forEach(r => {
-    if (r.grade === 'pending' && !passedCodes.has(r.courseCode)) studyingCodes.add(r.courseCode);
-  });
-  const { total: totalFee } = calcTotalExpenses(regs);
+  const failedCodes = new Set();
+  regs.forEach(r => { if (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') passedCodes.add(r.courseCode); });
+  regs.forEach(r => { if (r.grade === 'pending' && !passedCodes.has(r.courseCode)) studyingCodes.add(r.courseCode); });
+  regs.forEach(r => { if (r.grade === 'U' && !passedCodes.has(r.courseCode) && !studyingCodes.has(r.courseCode)) failedCodes.add(r.courseCode); });
+
+  // Pending transfers (สัมฤทธิบัตร ผ่านแล้วแต่ยังไม่โอน)
+  const pendingTransfer = regs.filter(r => r.program === 'certificate' && (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') && r.transferStatus !== 'transferred');
+
+  const { totalCourseFee, totalTransferFee, totalOtherFee, totalOtherExpenses, total: totalFee } = calcTotalExpenses(regs);
   const totalRequired = 23;
   const pct = Math.round((passedCodes.size / totalRequired) * 100);
 
+  // Stat cards
   document.getElementById('dashStats').innerHTML = `
-    <div class="stat-card green"><div class="label">สอบผ่านแล้ว</div><div class="value">${passedCodes.size}/${totalRequired}</div><div class="sub">ชุดวิชา</div></div>
+    <div class="stat-card green"><div class="label">สอบผ่านแล้ว</div><div class="value">${passedCodes.size}/${totalRequired}</div><div class="sub">${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต</div></div>
     <div class="stat-card blue"><div class="label">กำลังเรียน/รอสอบ</div><div class="value">${studyingCodes.size}</div><div class="sub">ชุดวิชา</div></div>
     <div class="stat-card orange"><div class="label">ค่าใช้จ่ายรวม</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div>
-    <div class="stat-card"><div class="label">เหลืออีก</div><div class="value">${totalRequired - passedCodes.size}</div><div class="sub">ชุดวิชา</div></div>
+    <div class="stat-card${failedCodes.size > 0 ? ' red' : ''}"><div class="label">เหลืออีก</div><div class="value">${totalRequired - passedCodes.size}</div><div class="sub">ชุดวิชา${failedCodes.size > 0 ? ' (ไม่ผ่าน ' + failedCodes.size + ')' : ''}</div></div>
   `;
+
+  // Progress bar
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressFill').textContent = pct + '%';
-  document.getElementById('progressText').textContent = `ผ่านแล้ว ${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต`;
+  document.getElementById('progressText').textContent = `ผ่านแล้ว ${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต (${pct}%)`;
 
-  // Current courses
+  // Current courses (กำลังเรียน/รอสอบ)
   const current = regs.filter(r => r.grade === 'pending' && !passedCodes.has(r.courseCode));
   const curEl = document.getElementById('currentCourses');
   if (current.length === 0) {
-    curEl.innerHTML = '<p style="color:var(--text-light);font-size:.85rem">ยังไม่มีวิชาที่กำลังเรียน</p>';
+    curEl.innerHTML = emptyMsg('ยังไม่มีวิชาที่กำลังเรียน');
   } else {
-    curEl.innerHTML = current.map(r => `<div class="exam-item"><div><span style="font-weight:600">${r.courseCode}</span> ${r.courseName}</div></div>`).join('');
+    curEl.innerHTML = current.map(r => {
+      const badge = r.program === 'certificate' ? '<span class="badge badge-cert" style="font-size:.65rem;margin-left:6px">สัมฤทธิบัตร</span>' : '';
+      return `<div class="exam-item"><div><span style="font-weight:600">${r.courseCode}</span> ${r.courseName}${badge}</div></div>`;
+    }).join('');
   }
 
   // Upcoming exams
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = regs.filter(r => r.examDate && r.examDate >= today && r.grade === 'pending')
-    .sort((a, b) => a.examDate.localeCompare(b.examDate));
+  const upcoming = regs.filter(r => r.examDate && r.examDate >= today && r.grade === 'pending').sort((a, b) => a.examDate.localeCompare(b.examDate));
   const exEl = document.getElementById('upcomingExams');
   if (upcoming.length === 0) {
-    exEl.innerHTML = '<p style="color:var(--text-light);font-size:.85rem">ยังไม่มีตารางสอบ</p>';
+    exEl.innerHTML = emptyMsg('ยังไม่มีตารางสอบ');
   } else {
     exEl.innerHTML = upcoming.slice(0, 5).map(r => {
       const d = new Date(r.examDate);
-      const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
       return `<div class="exam-item">
         <div class="exam-date"><div class="day">${d.getDate()}</div><div class="month">${months[d.getMonth()]}</div></div>
         <div class="exam-info"><div class="course">${r.courseCode} ${r.courseName}</div><div class="time">${r.examTime || '-'}</div></div>
       </div>`;
     }).join('');
   }
+
+  // Pending transfers
+  const ptEl = document.getElementById('pendingTransfers');
+  if (pendingTransfer.length === 0) {
+    ptEl.innerHTML = emptyMsg('ไม่มีวิชารอโอน');
+  } else {
+    ptEl.innerHTML = pendingTransfer.map(r => `<div class="exam-item">
+      <div style="flex:1"><span style="font-weight:600">${r.courseCode}</span> ${r.courseName} <span class="badge badge-pending" style="font-size:.65rem">รอโอน</span></div>
+    </div>`).join('');
+  }
+
+  // Failed courses
+  const fcEl = document.getElementById('failedCourses');
+  if (failedCodes.size === 0) {
+    fcEl.innerHTML = emptyMsg('ไม่มี');
+  } else {
+    const failedRegs = [];
+    failedCodes.forEach(code => {
+      const r = regs.filter(x => x.courseCode === code).pop();
+      if (r) failedRegs.push(r);
+    });
+    fcEl.innerHTML = failedRegs.map(r => `<div class="exam-item">
+      <div style="flex:1"><span style="font-weight:600">${r.courseCode}</span> ${r.courseName} <span class="badge badge-u" style="font-size:.65rem">U</span></div>
+    </div>`).join('');
+  }
+
+  // Expense summary
+  const esEl = document.getElementById('dashExpenseSummary');
+  esEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;font-size:.85rem">
+    <div style="padding:8px;background:var(--primary-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าชุดวิชา</div><div style="font-weight:700">${totalCourseFee.toLocaleString()}</div></div>
+    <div style="padding:8px;background:var(--warning-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าโอนวิชา</div><div style="font-weight:700">${totalTransferFee.toLocaleString()}</div></div>
+    <div style="padding:8px;background:#f0f2f5;border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าธรรมเนียม</div><div style="font-weight:700">${totalOtherFee.toLocaleString()}</div></div>
+    <div style="padding:8px;background:var(--success-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าใช้จ่ายอื่น</div><div style="font-weight:700">${totalOtherExpenses.toLocaleString()}</div></div>
+  </div>`;
 }
 
 // ===== CURRICULUM =====
