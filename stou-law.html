@@ -1340,9 +1340,12 @@ function saveRegistration(e) {
 function resetRegForm() {
   editingRegId = null;
   document.getElementById('regForm').reset();
-  document.getElementById('regCourseName').value = '';
-  document.getElementById('regCourseName').readOnly = true;
-  document.getElementById('regCourseName').style.background = '#f8f9fa';
+  document.getElementById('regYear').value = '';
+  document.getElementById('regSemester').value = '';
+  document.getElementById('regBatch').value = '';
+  document.getElementById('regBatchCode').value = '';
+  document.getElementById('regStudentId').value = '';
+  document.getElementById('regProgram').value = 'normal';
   document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
   setCourseRows(null);
   setFeeItems(null);
@@ -1424,6 +1427,7 @@ function editRegistration(id) {
   setCourseRows(groupCourses.map(c => ({
     courseCode: c.courseCode,
     courseName: c.courseName,
+    courseFee: c.courseFee,
     examDate: c.examDate,
     examTime: c.examTime,
     grade: c.grade,
