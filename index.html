@@ -171,6 +171,25 @@ tr:hover { background:var(--primary-soft); }
 .fee-row button { background:none; border:none; color:var(--gray); cursor:pointer; font-size:1.1rem; padding:4px 8px; transition:var(--transition); border-radius:50%; }
 .fee-row button:hover { background:var(--danger-soft); color:var(--danger); }
 
+/* Expense Semester Accordion */
+.sem-accordion { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:10px; }
+.sem-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; background:#fff; transition:var(--transition); user-select:none; }
+.sem-header:hover { background:var(--primary-soft); }
+.sem-header .sem-left { display:flex; align-items:center; gap:10px; }
+.sem-header .sem-arrow { transition:transform .2s; font-size:.8rem; color:var(--text-light); }
+.sem-header .sem-arrow.open { transform:rotate(90deg); }
+.sem-header .sem-title { font-weight:700; font-size:.92rem; }
+.sem-header .sem-count { font-size:.78rem; color:var(--text-light); }
+.sem-header .sem-total { font-weight:700; font-size:.95rem; color:var(--primary); }
+.sem-body { display:none; border-top:1px solid var(--border); background:#fafbfc; }
+.sem-body.open { display:block; }
+.sem-body table { margin:0; font-size:.83rem; }
+.sem-body th { background:var(--primary-soft); color:var(--primary); font-size:.73rem; padding:8px 12px; }
+.sem-body td { padding:8px 12px; border-bottom:1px solid var(--border); }
+.sem-body tr:last-child td { border-bottom:none; }
+.sem-body .sem-fee-detail { font-size:.75rem; color:var(--text-light); margin-top:2px; }
+.sem-body .sem-subtotal { background:var(--primary-soft); font-weight:700; }
+
 /* Clock Time Picker */
 .clock-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.45); backdrop-filter:blur(3px); z-index:300; align-items:center; justify-content:center; }
 .clock-overlay.show { display:flex; }
@@ -394,18 +413,7 @@ tr:hover { background:var(--primary-soft); }
     </div>
     <div class="card">
       <h2>ค่าลงทะเบียนแยกตามภาคการศึกษา</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ปี/ภาคการศึกษา</th>
-              <th>จำนวนวิชา</th>
-              <th>ค่าลงทะเบียนรวม (บาท)</th>
-            </tr>
-          </thead>
-          <tbody id="expenseBySemester"></tbody>
-        </table>
-      </div>
+      <div id="expenseBySemester"></div>
     </div>
   </div>
 </div>
@@ -1671,33 +1679,69 @@ function renderExpenses() {
     <td style="text-align:right">${total.toLocaleString()} บาท</td>
   </tr>`;
 
-  // By semester — correct calculation
+  // By semester — accordion with details
   const bySem = {};
   const groupSeenSem = new Set();
   regs.forEach(r => {
     const key = `${r.academicYear}/${r.semester}`;
-    if (!bySem[key]) bySem[key] = { count: 0, courseFee: 0, otherFee: 0 };
-    bySem[key].count++;
+    if (!bySem[key]) bySem[key] = { courses: [], courseFee: 0, otherFee: 0, feeDetails: [] };
+    bySem[key].courses.push(r);
     bySem[key].courseFee += Number(r.courseFee) || 0;
     const gid = r.regGroupId || r.id;
     if (!groupSeenSem.has(gid)) {
       groupSeenSem.add(gid);
       bySem[key].otherFee += Number(r.fee) || 0;
+      if (r.feeItems) {
+        r.feeItems.forEach(f => bySem[key].feeDetails.push(f));
+      }
     }
   });
-  const semTbody = document.getElementById('expenseBySemester');
+  const semContainer = document.getElementById('expenseBySemester');
   const semKeys = Object.keys(bySem).sort().reverse();
   if (semKeys.length === 0) {
-    semTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีข้อมูล</td></tr>';
+    semContainer.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีข้อมูล</p>';
   } else {
-    semTbody.innerHTML = semKeys.map(k => {
+    semContainer.innerHTML = semKeys.map((k, idx) => {
       const s = bySem[k];
       const semTotal = s.courseFee + s.otherFee;
-      return `<tr>
-        <td>ปี ${k.split('/')[0]} ภาค ${k.split('/')[1]}</td>
-        <td style="text-align:center">${s.count} วิชา</td>
-        <td style="text-align:right;font-weight:600">${semTotal.toLocaleString()}</td>
-      </tr>`;
+      const semName = `ปี ${k.split('/')[0]} ภาค ${k.split('/')[1]}`;
+      // Course rows
+      let courseRows = s.courses.map(c =>
+        `<tr>
+          <td style="font-weight:600">${c.courseCode}</td>
+          <td>${c.courseName}</td>
+          <td>${c.program === 'certificate' ? '<span class="badge badge-cert">สัมฤทธิบัตร</span>' : '<span class="badge badge-normal">ปกติ</span>'}</td>
+          <td style="text-align:right">${(c.courseFee||0).toLocaleString()}</td>
+          <td>${gradeBadge(c.grade)}</td>
+        </tr>`
+      ).join('');
+      // Fee detail rows
+      let feeRows = '';
+      if (s.feeDetails.length > 0) {
+        feeRows = s.feeDetails.map(f =>
+          `<tr><td colspan="3" style="padding-left:24px;color:var(--text-light)">${f.label}</td><td style="text-align:right;color:var(--text-light)">${f.amount.toLocaleString()}</td><td></td></tr>`
+        ).join('');
+      }
+      return `<div class="sem-accordion">
+        <div class="sem-header" onclick="this.querySelector('.sem-arrow').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <div class="sem-left">
+            <span class="sem-arrow">▶</span>
+            <span class="sem-title">${semName}</span>
+            <span class="sem-count">${s.courses.length} วิชา</span>
+          </div>
+          <span class="sem-total">${semTotal.toLocaleString()} บาท</span>
+        </div>
+        <div class="sem-body">
+          <table>
+            <thead><tr><th>รหัส</th><th>ชื่อวิชา</th><th>โครงการ</th><th>ค่าชุดวิชา</th><th>ผลสอบ</th></tr></thead>
+            <tbody>
+              ${courseRows}
+              ${feeRows}
+              <tr class="sem-subtotal"><td colspan="3">รวมภาคนี้</td><td style="text-align:right">${semTotal.toLocaleString()}</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>`;
     }).join('');
   }
 }
