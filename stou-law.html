@@ -171,6 +171,30 @@ tr:hover { background:var(--primary-soft); }
 .fee-row button { background:none; border:none; color:var(--gray); cursor:pointer; font-size:1.1rem; padding:4px 8px; transition:var(--transition); border-radius:50%; }
 .fee-row button:hover { background:var(--danger-soft); color:var(--danger); }
 
+/* Clock Time Picker */
+.clock-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.45); backdrop-filter:blur(3px); z-index:300; align-items:center; justify-content:center; }
+.clock-overlay.show { display:flex; }
+.clock-picker { background:#fff; border-radius:20px; padding:24px; width:280px; box-shadow:0 12px 40px rgba(0,0,0,.25); text-align:center; }
+.clock-picker .clock-title { font-size:.8rem; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:.3px; margin-bottom:8px; }
+.clock-picker .clock-display { font-size:2.8rem; font-weight:800; color:var(--primary); margin-bottom:16px; letter-spacing:2px; }
+.clock-picker .clock-display span { cursor:pointer; padding:4px 8px; border-radius:8px; transition:var(--transition); }
+.clock-picker .clock-display span.active { background:var(--primary-light); color:#fff; }
+.clock-picker .clock-display span:hover:not(.active) { background:var(--primary-soft); }
+.clock-picker .clock-display .clock-colon { cursor:default; padding:0; }
+.clock-picker .clock-display .clock-colon:hover { background:none; }
+.clock-face { position:relative; width:220px; height:220px; margin:0 auto 16px; border-radius:50%; background:#f0f2f5; border:2px solid var(--border); }
+.clock-face .clock-center { position:absolute; width:8px; height:8px; background:var(--primary-light); border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); z-index:3; }
+.clock-face .clock-hand { position:absolute; bottom:50%; left:50%; width:2px; background:var(--primary-light); transform-origin:bottom center; z-index:2; border-radius:2px; }
+.clock-face .clock-num { position:absolute; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:.85rem; font-weight:600; cursor:pointer; transition:var(--transition); color:var(--text); user-select:none; }
+.clock-face .clock-num:hover { background:var(--primary-soft); }
+.clock-face .clock-num.selected { background:var(--primary-light); color:#fff; }
+.clock-picker .clock-actions { display:flex; gap:8px; justify-content:flex-end; }
+.clock-picker .clock-actions button { padding:8px 18px; border:none; border-radius:8px; cursor:pointer; font-size:.85rem; font-weight:600; transition:var(--transition); }
+.clock-picker .clock-actions .clock-cancel { background:#f0f2f5; color:var(--text); }
+.clock-picker .clock-actions .clock-cancel:hover { background:#e0e2e5; }
+.clock-picker .clock-actions .clock-ok { background:var(--primary-light); color:#fff; }
+.clock-picker .clock-actions .clock-ok:hover { background:#1557b0; }
+
 /* Lock Screen */
 #lockScreen { display:flex; min-height:100vh; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--primary) 0%, #1a3a5c 50%, var(--primary-light) 100%); }
 .lock-card { background:#fff; border-radius:20px; padding:48px 36px; max-width:400px; width:92%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
@@ -486,6 +510,24 @@ tr:hover { background:var(--primary-soft); }
   </div>
 </div>
 
+<!-- Clock Picker -->
+<div class="clock-overlay" id="clockOverlay">
+  <div class="clock-picker">
+    <div class="clock-title" id="clockTitle">เลือกเวลา</div>
+    <div class="clock-display">
+      <span id="clockHH" class="active" onclick="clockSwitchMode('hour')">--</span><span class="clock-colon">:</span><span id="clockMM" onclick="clockSwitchMode('minute')">--</span>
+    </div>
+    <div class="clock-face" id="clockFace">
+      <div class="clock-center"></div>
+      <div class="clock-hand" id="clockHand"></div>
+    </div>
+    <div class="clock-actions">
+      <button class="clock-cancel" onclick="clockCancel()">ยกเลิก</button>
+      <button class="clock-ok" onclick="clockConfirm()">ตกลง</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== FIREBASE INIT =====
 const firebaseConfig = {
@@ -650,6 +692,95 @@ function resetCurriculumToDefault() {
     renderCurriculum();
     populateCourseDropdown();
   }
+}
+
+// ===== CLOCK FACE PICKER =====
+let clockTarget = null;
+let clockMode = 'hour'; // 'hour' or 'minute'
+let clockH = 9, clockM = 0;
+
+function openClockPicker(inputEl) {
+  clockTarget = inputEl;
+  const cur = inputEl.value;
+  if (cur && cur.includes(':')) {
+    const [h, m] = cur.split(':').map(Number);
+    clockH = h; clockM = m;
+  } else {
+    clockH = 9; clockM = 0;
+  }
+  clockMode = 'hour';
+  renderClock();
+  document.getElementById('clockOverlay').classList.add('show');
+}
+
+function clockSwitchMode(mode) {
+  clockMode = mode;
+  renderClock();
+}
+
+function renderClock() {
+  const hhEl = document.getElementById('clockHH');
+  const mmEl = document.getElementById('clockMM');
+  hhEl.textContent = String(clockH).padStart(2, '0');
+  mmEl.textContent = String(clockM).padStart(2, '0');
+  hhEl.className = clockMode === 'hour' ? 'active' : '';
+  mmEl.className = clockMode === 'minute' ? 'active' : '';
+
+  const face = document.getElementById('clockFace');
+  // Clear old numbers
+  face.querySelectorAll('.clock-num').forEach(el => el.remove());
+
+  const hand = document.getElementById('clockHand');
+  const R = 90; // radius for numbers
+  const cx = 110, cy = 110; // center
+
+  if (clockMode === 'hour') {
+    for (let h = 0; h < 24; h++) {
+      const isInner = h >= 12;
+      const r = isInner ? 60 : R;
+      const displayH = h;
+      const angle = ((h % 12) * 30 - 90) * Math.PI / 180;
+      const x = cx + r * Math.cos(angle) - 18;
+      const y = cy + r * Math.sin(angle) - 18;
+      const el = document.createElement('div');
+      el.className = 'clock-num' + (clockH === h ? ' selected' : '');
+      el.textContent = String(h).padStart(2, '0');
+      el.style.cssText = `left:${x}px;top:${y}px;font-size:${isInner ? '.72rem' : '.85rem'}`;
+      el.onclick = () => { clockH = h; clockMode = 'minute'; renderClock(); };
+      face.appendChild(el);
+    }
+    const selR = clockH >= 12 ? 60 : R;
+    const selAngle = ((clockH % 12) * 30 - 90) * Math.PI / 180;
+    hand.style.height = selR + 'px';
+    hand.style.transform = `rotate(${(clockH % 12) * 30}deg)`;
+  } else {
+    for (let m = 0; m < 60; m += 5) {
+      const angle = (m * 6 - 90) * Math.PI / 180;
+      const x = cx + R * Math.cos(angle) - 18;
+      const y = cy + R * Math.sin(angle) - 18;
+      const el = document.createElement('div');
+      el.className = 'clock-num' + (clockM === m ? ' selected' : '');
+      el.textContent = String(m).padStart(2, '0');
+      el.style.cssText = `left:${x}px;top:${y}px`;
+      el.onclick = () => { clockM = m; renderClock(); };
+      face.appendChild(el);
+    }
+    hand.style.height = R + 'px';
+    hand.style.transform = `rotate(${clockM * 6}deg)`;
+  }
+}
+
+function clockCancel() {
+  document.getElementById('clockOverlay').classList.remove('show');
+  clockTarget = null;
+}
+
+function clockConfirm() {
+  if (clockTarget) {
+    clockTarget.value = String(clockH).padStart(2, '0') + ':' + String(clockM).padStart(2, '0');
+  }
+  document.getElementById('clockOverlay').classList.remove('show');
+  clockTarget = null;
 }
 
 // ===== CURRICULUM DATA =====
@@ -1192,8 +1323,8 @@ function addCourseRow(data) {
     </div>
     <div class="cr-bottom">
       <div><label>วันสอบ</label><input type="date" class="cr-exam-date" value="${data?.examDate||''}"></div>
-      <div><label>เริ่ม</label><input type="time" class="cr-time-start" value="${timeStart}"></div>
-      <div><label>ถึง</label><input type="time" class="cr-time-end" value="${timeEnd}"></div>
+      <div><label>เริ่ม</label><input type="text" class="cr-time-start" value="${timeStart}" readonly placeholder="--:--" onclick="openClockPicker(this)" style="cursor:pointer;text-align:center"></div>
+      <div><label>ถึง</label><input type="text" class="cr-time-end" value="${timeEnd}" readonly placeholder="--:--" onclick="openClockPicker(this)" style="cursor:pointer;text-align:center"></div>
       <div><label>ผลสอบ</label><select class="cr-grade"><option value="pending">รอผล</option><option value="H">H</option><option value="S">S</option><option value="S*">S*</option><option value="U">U</option></select></div>
       <button type="button" class="cr-del" onclick="this.closest('.course-row').remove()">✕</button>
     </div>`;
