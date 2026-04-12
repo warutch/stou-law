@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบการเรียนนิติศาสตร์ มสธ.</title>
+<style>
+:root {
+  --primary: #1a5276;
+  --primary-light: #2980b9;
+  --success: #27ae60;
+  --warning: #f39c12;
+  --danger: #e74c3c;
+  --gray: #95a5a6;
+  --bg: #f5f6fa;
+  --card-bg: #fff;
+  --text: #2c3e50;
+  --text-light: #7f8c8d;
+  --border: #dcdde1;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Navigation */
+.nav { background: var(--primary); padding: 0 16px; display: flex; align-items: center; gap: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.nav-brand { color: #fff; font-weight: 700; font-size: 1.1rem; padding: 12px 16px 12px 0; border-right: 1px solid rgba(255,255,255,.2); margin-right: 4px; white-space: nowrap; }
+.nav-btn { background: none; border: none; color: rgba(255,255,255,.7); padding: 14px 16px; cursor: pointer; font-size: .9rem; transition: .2s; border-bottom: 3px solid transparent; }
+.nav-btn:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-btn.active { color: #fff; border-bottom-color: #fff; background: rgba(255,255,255,.1); }
+.nav-right { margin-left: auto; display: flex; gap: 4px; }
+.nav-right button { background: rgba(255,255,255,.15); border: none; color: #fff; padding: 6px 12px; border-radius: var(--radius); cursor: pointer; font-size: .8rem; }
+.nav-right button:hover { background: rgba(255,255,255,.25); }
+
+/* Main */
+.container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.card h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--primary); }
+.card h3 { font-size: 1rem; margin: 16px 0 8px; color: var(--primary-light); }
+
+/* Stats Row */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); text-align: center; }
+.stat-card .label { font-size: .8rem; color: var(--text-light); margin-bottom: 4px; }
+.stat-card .value { font-size: 1.8rem; font-weight: 700; }
+.stat-card .sub { font-size: .75rem; color: var(--text-light); margin-top: 2px; }
+.stat-card.blue .value { color: var(--primary-light); }
+.stat-card.green .value { color: var(--success); }
+.stat-card.orange .value { color: var(--warning); }
+.stat-card.red .value { color: var(--danger); }
+
+/* Progress Bar */
+.progress-bar { background: #ecf0f1; border-radius: 20px; height: 24px; overflow: hidden; margin: 8px 0; position: relative; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-light), var(--success)); border-radius: 20px; transition: width .5s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .75rem; font-weight: 600; min-width: 40px; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th { background: var(--primary); color: #fff; padding: 10px 8px; text-align: left; font-weight: 500; position: sticky; top: 0; }
+td { padding: 8px; border-bottom: 1px solid var(--border); }
+tr:hover { background: #f8f9fa; }
+.table-wrap { overflow-x: auto; }
+
+/* Badges */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 600; }
+.badge-h { background: #d4efdf; color: #1e8449; }
+.badge-s { background: #d5f5e3; color: #27ae60; }
+.badge-sstar { background: #fef9e7; color: #f39c12; }
+.badge-u { background: #fadbd8; color: #e74c3c; }
+.badge-pending { background: #eaecee; color: #7f8c8d; }
+.badge-passed { background: #d4efdf; color: #1e8449; }
+.badge-studying { background: #d6eaf8; color: #2980b9; }
+.badge-notyet { background: #eaecee; color: #7f8c8d; }
+.badge-normal { background: #d6eaf8; color: #2471a3; }
+.badge-cert { background: #fdebd0; color: #ca6f1e; }
+
+/* Form */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { font-size: .8rem; color: var(--text-light); margin-bottom: 4px; font-weight: 500; }
+.form-group input, .form-group select { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: .9rem; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 2px rgba(41,128,185,.15); }
+
+.btn { padding: 8px 20px; border: none; border-radius: var(--radius); cursor: pointer; font-size: .9rem; font-weight: 500; transition: .2s; }
+.btn-primary { background: var(--primary-light); color: #fff; }
+.btn-primary:hover { background: var(--primary); }
+.btn-sm { padding: 4px 10px; font-size: .8rem; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #1e8449; }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: #f8f9fa; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: var(--radius); padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 16px; color: var(--primary); }
+
+/* Curriculum categories */
+.cat-header { background: var(--primary); color: #fff; padding: 10px 16px; border-radius: var(--radius) var(--radius) 0 0; margin-top: 16px; font-weight: 600; display: flex; justify-content: space-between; }
+.cat-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); }
+.cat-body tr:last-child td { border-bottom: none; }
+.subgroup { background: #eaf2f8; padding: 6px 16px; font-size: .85rem; font-weight: 600; color: var(--primary-light); }
+
+/* Upcoming exams */
+.exam-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.exam-item:last-child { border-bottom: none; }
+.exam-date { background: var(--primary-light); color: #fff; border-radius: var(--radius); padding: 8px 12px; text-align: center; min-width: 60px; }
+.exam-date .day { font-size: 1.2rem; font-weight: 700; }
+.exam-date .month { font-size: .7rem; }
+.exam-info .course { font-weight: 600; }
+.exam-info .time { font-size: .8rem; color: var(--text-light); }
+
+/* Curriculum edit buttons */
+.cat-header .cat-actions { display: flex; gap: 4px; }
+.cat-header .cat-actions button { background: rgba(255,255,255,.2); border: none; color: #fff; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: .75rem; }
+.cat-header .cat-actions button:hover { background: rgba(255,255,255,.35); }
+.edit-row { display: flex; gap: 4px; }
+.edit-row button { padding: 2px 6px; font-size: .75rem; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .nav { flex-wrap: wrap; }
+  .nav-brand { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,.2); padding: 10px 0; }
+  .nav-btn { padding: 10px 12px; font-size: .8rem; }
+  .form-grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">STOU Law</div>
+  <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="nav-btn" onclick="showTab('curriculum')">หลักสูตร</button>
+  <button class="nav-btn" onclick="showTab('registration')">ลงทะเบียน</button>
+  <button class="nav-btn" onclick="showTab('expenses')">ค่าใช้จ่าย</button>
+  <div class="nav-right">
+    <button onclick="exportData()" title="Export ข้อมูล">Export</button>
+    <button onclick="document.getElementById('importFile').click()" title="Import ข้อมูล">Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Dashboard -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats" id="dashStats"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card" style="grid-column:1/3">
+        <h2>ความก้าวหน้าการเรียน</h2>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-top:4px" id="progressText"></div>
+      </div>
+      <div class="card">
+        <h2>วิชาที่กำลังเรียน / รอสอบ</h2>
+        <div id="currentCourses"><p style="color:var(--text-light);font-size:.85rem">ยังไม่มีวิชาที่กำลังเรียน</p></div>
+      </div>
+      <div class="card">
+        <h2>ตารางสอบที่จะมาถึง</h2>
+        <div id="upcomingExams"><p style="color:var(--text-light);font-size:.85rem">ยังไม่มีตารางสอบ</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Curriculum -->
+  <div id="tab-curriculum" class="tab-content">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="margin-bottom:4px">โครงสร้างหลักสูตรนิติศาสตรบัณฑิต (หลักสูตรปรับปรุง พ.ศ. 2564)</h2>
+          <p style="font-size:.85rem;color:var(--text-light)" id="curriculumSummary"></p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="openAddCourse()">+ เพิ่มวิชา</button>
+          <button class="btn btn-sm btn-outline" onclick="openGroupModal()">จัดการกลุ่มเลือก</button>
+          <button class="btn btn-sm btn-outline" onclick="resetCurriculumToDefault()">รีเซ็ต</button>
+        </div>
+      </div>
+      <div id="curriculumList"></div>
+    </div>
+  </div>
+
+  <!-- Registration -->
+  <div id="tab-registration" class="tab-content">
+    <div class="card">
+      <h2>ลงทะเบียนเรียน</h2>
+      <form id="regForm" onsubmit="saveRegistration(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ปีการศึกษา *</label>
+            <input type="text" id="regYear" placeholder="เช่น 2568" required>
+          </div>
+          <div class="form-group">
+            <label>ภาคการศึกษา *</label>
+            <select id="regSemester" required>
+              <option value="">เลือก</option>
+              <option value="1">ภาคต้น (1)</option>
+              <option value="2">ภาคปลาย (2)</option>
+              <option value="summer">ภาคฤดูร้อน</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>รุ่น</label>
+            <input type="text" id="regBatch" placeholder="เช่น รุ่นที่ 1">
+          </div>
+          <div class="form-group">
+            <label>รหัสประจำรุ่น</label>
+            <input type="text" id="regBatchCode" placeholder="เช่น 681-2568-1">
+          </div>
+          <div class="form-group">
+            <label>รหัสนักศึกษา</label>
+            <input type="text" id="regStudentId" placeholder="เช่น 12345678">
+          </div>
+          <div class="form-group">
+            <label>โครงการ *</label>
+            <select id="regProgram" required>
+              <option value="normal">ลงปกติ</option>
+              <option value="certificate">สัมฤทธิบัตร</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>รหัสวิชา *</label>
+            <input type="text" id="regCourse" list="courseList" required placeholder="พิมพ์รหัสหรือชื่อวิชา" autocomplete="off" oninput="onCourseInput()" onchange="onCourseInput()">
+            <datalist id="courseList"></datalist>
+          </div>
+          <div class="form-group">
+            <label>ชื่อวิชา</label>
+            <input type="text" id="regCourseName" readonly style="background:#f8f9fa">
+          </div>
+          <div class="form-group">
+            <label>ค่าลงทะเบียน (บาท)</label>
+            <input type="number" id="regFee" placeholder="เช่น 1000" min="0">
+          </div>
+          <div class="form-group">
+            <label>วันสอบ</label>
+            <input type="date" id="regExamDate">
+          </div>
+          <div class="form-group">
+            <label>เวลาสอบ</label>
+            <input type="text" id="regExamTime" placeholder="เช่น 09:00-12:00">
+          </div>
+          <div class="form-group">
+            <label>ผลสอบ</label>
+            <select id="regGrade">
+              <option value="pending">รอผล</option>
+              <option value="H">H (เกียรตินิยม)</option>
+              <option value="S">S (ผ่าน)</option>
+              <option value="S*">S* (ผ่านแบบมีเงื่อนไข)</option>
+              <option value="U">U (ไม่ผ่าน)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="regSubmitBtn">บันทึกการลงทะเบียน</button>
+          <button type="button" class="btn btn-outline" onclick="resetRegForm()">ล้างฟอร์ม</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>รายการลงทะเบียนทั้งหมด</h2>
+      <div style="margin-bottom:12px">
+        <select id="filterSemester" onchange="renderRegistrations()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem">
+          <option value="">ทุกภาคการศึกษา</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ปี/ภาค</th>
+              <th>รหัสวิชา</th>
+              <th>ชื่อวิชา</th>
+              <th>โครงการ</th>
+              <th>ค่าลงทะเบียน</th>
+              <th>วันสอบ</th>
+              <th>ผลสอบ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="regTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expenses -->
+  <div id="tab-expenses" class="tab-content">
+    <div class="stats" id="expenseStats"></div>
+    <div class="card">
+      <h2>รายละเอียดค่าใช้จ่าย</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>รายการ</th>
+              <th>จำนวน</th>
+              <th>ราคา/หน่วย</th>
+              <th>รวม (บาท)</th>
+            </tr>
+          </thead>
+          <tbody id="expenseTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>ค่าลงทะเบียนแยกตามภาคการศึกษา</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ปี/ภาคการศึกษา</th>
+              <th>จำนวนวิชา</th>
+              <th>ค่าลงทะเบียนรวม (บาท)</th>
+            </tr>
+          </thead>
+          <tbody id="expenseBySemester"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grade Modal -->
+<div class="modal-overlay" id="gradeModal">
+  <div class="modal">
+    <h3>บันทึกผลสอบ</h3>
+    <input type="hidden" id="gradeRegId">
+    <div class="form-group" style="margin-bottom:16px">
+      <label>ผลสอบ</label>
+      <select id="gradeSelect" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+        <option value="pending">รอผล</option>
+        <option value="H">H (เกียรตินิยม)</option>
+        <option value="S">S (ผ่าน)</option>
+        <option value="S*">S* (ผ่านแบบมีเงื่อนไข)</option>
+        <option value="U">U (ไม่ผ่าน)</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveGrade()">บันทึก</button>
+      <button class="btn btn-outline" onclick="closeModal('gradeModal')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Course Edit Modal -->
+<div class="modal-overlay" id="courseModal">
+  <div class="modal">
+    <h3 id="courseModalTitle">เพิ่ม/แก้ไขวิชา</h3>
+    <input type="hidden" id="courseEditKey">
+    <input type="hidden" id="courseEditIdx">
+    <div class="form-grid" style="gap:10px">
+      <div class="form-group">
+        <label>หมวดวิชา *</label>
+        <select id="courseEditCategory" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+          <option value="ge_required">ศึกษาทั่วไป — บังคับ</option>
+          <option value="ge_elective_lang">ศึกษาทั่วไป — ภาษา</option>
+          <option value="ge_elective_social">ศึกษาทั่วไป — สังคมศาสตร์</option>
+          <option value="ge_elective_human">ศึกษาทั่วไป — มนุษยศาสตร์</option>
+          <option value="core">วิชาแกน (บังคับ)</option>
+          <option value="elective">วิชาเฉพาะเลือก (กลุ่ม)</option>
+        </select>
+      </div>
+      <div class="form-group" id="courseEditGroupWrap" style="display:none">
+        <label>กลุ่มวิชาเลือก</label>
+        <input type="text" id="courseEditGroup" placeholder="เช่น กฎหมายธุรกิจ" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+      </div>
+      <div class="form-group">
+        <label>รหัสวิชา *</label>
+        <input type="text" id="courseEditCode" placeholder="เช่น 41214" required style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+      </div>
+      <div class="form-group">
+        <label>ชื่อวิชา *</label>
+        <input type="text" id="courseEditName" placeholder="เช่น กฎหมายแพ่ง..." required style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+      </div>
+      <div class="form-group">
+        <label>หน่วยกิต</label>
+        <input type="number" id="courseEditCredits" value="6" min="1" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+      </div>
+      <div class="form-group">
+        <label>หมายเหตุ</label>
+        <input type="text" id="courseEditNote" placeholder="(ถ้ามี)" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveCourseEdit()">บันทึก</button>
+      <button class="btn btn-outline" onclick="closeModal('courseModal')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Elective Group Modal -->
+<div class="modal-overlay" id="groupModal">
+  <div class="modal">
+    <h3>จัดการกลุ่มวิชาเลือก</h3>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ชื่อกลุ่มใหม่</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newGroupName" placeholder="เช่น กฎหมายเศรษฐกิจ" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem">
+        <button class="btn btn-primary btn-sm" onclick="addElectiveGroup()">เพิ่มกลุ่ม</button>
+      </div>
+    </div>
+    <div id="groupList"></div>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('groupModal')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <h3 id="historyTitle">ประวัติการลงทะเบียน</h3>
+    <div id="historyContent"></div>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('historyModal')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CURRICULUM DATA =====
+const DEFAULT_CURRICULUM = {
+  ge_required: [
+    { code: '10141', name: 'วิทยาศาสตร์ เทคโนโลยีและสิ่งแวดล้อมเพื่อชีวิต', credits: 6 },
+    { code: '10151', name: 'ไทยศึกษา', credits: 6 },
+  ],
+  ge_elective_lang: [
+    { code: '10111', name: 'ภาษาอังกฤษเพื่อการสื่อสาร', credits: 6 },
+    { code: '10161', name: 'ภาษาไทยเพื่อการสื่อสาร', credits: 6 },
+    { code: '10162', name: 'ภาษาจีนเพื่อการสื่อสาร', credits: 6 },
+    { code: '10163', name: 'ภาษาเขมรเพื่อการสื่อสาร', credits: 6 },
+  ],
+  ge_elective_social: [
+    { code: '10131', name: 'สังคมมนุษย์', credits: 6 },
+    { code: '10152', name: 'ไทยกับสังคมโลก', credits: 6 },
+  ],
+  ge_elective_human: [
+    { code: '10103', name: 'ทักษะชีวิต', credits: 6 },
+    { code: '10121', name: 'อารยธรรมมนุษย์', credits: 6 },
+    { code: '10164', name: 'สังคมและวัฒนธรรมอาเซียน', credits: 6 },
+  ],
+  core: [
+    { code: '40101', name: 'ความรู้เบื้องต้นเกี่ยวกับกฎหมายทั่วไป', credits: 6 },
+    { code: '41201', name: 'กฎหมายมหาชน', credits: 6 },
+    { code: '41211', name: 'กฎหมายแพ่ง 1: บุคคล นิติกรรม สัญญา', credits: 6 },
+    { code: '41212', name: 'กฎหมายแพ่ง 2: หนี้ ละเมิด', credits: 6 },
+    { code: '41213', name: 'กฎหมายว่าด้วยทรัพย์สิน', credits: 6 },
+    { code: '41214', name: 'กฎหมายแพ่งว่าด้วยบุคคล นิติกรรม และหนี้', credits: 6 },
+    { code: '41215', name: 'กฎหมายแพ่งว่าด้วยละเมิดและทรัพย์สิน', credits: 6 },
+    { code: '41216', name: 'กฎหมายอาญา: ภาคบทบัญญัติทั่วไป ความผิด และลหุโทษ', credits: 6 },
+    { code: '41217', name: 'หลักกฎหมายมหาชนและกฎหมายรัฐธรรมนูญ', credits: 6 },
+    { code: '41218', name: 'กฎหมายพาณิชย์และธุรกิจ 1', credits: 6 },
+    { code: '41231', name: 'กฎหมายอาญา 1: ภาคบทบัญญัติทั่วไป', credits: 6 },
+    { code: '41232', name: 'กฎหมายอาญา 2: ภาคความผิด', credits: 6 },
+    { code: '41311', name: 'กฎหมายแพ่งว่าด้วยครอบครัวและมรดก', credits: 6 },
+    { code: '41312', name: 'กฎหมายวิธีพิจารณาความแพ่ง', credits: 6 },
+    { code: '41313', name: 'กฎหมายวิธีพิจารณาความอาญาและกฎหมายลักษณะพยาน', credits: 6 },
+    { code: '41314', name: 'กฎหมายพาณิชย์และธุรกิจ 2', credits: 6 },
+    { code: '41321', name: 'กฎหมายพาณิชย์ 1: ซื้อขาย เช่าทรัพย์ เช่าซื้อ', credits: 6 },
+    { code: '41322', name: 'กฎหมายพาณิชย์ 2: ยืม ฝากทรัพย์ ตัวแทน ประกันภัย', credits: 6 },
+    { code: '41323', name: 'กฎหมายพาณิชย์ 3: ประกันด้วยบุคคลและทรัพย์ ตั๋วเงิน', credits: 6 },
+    { code: '41324', name: 'กฎหมายพาณิชย์ 4: หุ้นส่วน บริษัท', credits: 6 },
+    { code: '41341', name: 'กฎหมายวิธีสบัญญัติ 1: หลักทั่วไปในวิธีพิจารณาความแพ่ง', credits: 6 },
+    { code: '41342', name: 'กฎหมายวิธีสบัญญัติ 2: วิธีพิจารณาความแพ่งและกฎหมายล้มละลาย', credits: 6 },
+    { code: '41343', name: 'กฎหมายวิธีสบัญญัติ 3: วิธีพิจารณาความอาญา', credits: 6 },
+    { code: '41403', name: 'กฎหมายเกี่ยวกับการเปลี่ยนแปลงทางสังคม', credits: 6 },
+    { code: '41444', name: 'ประสบการณ์วิชาชีพกฎหมาย', credits: 6, note: 'ลงได้เมื่อเหลือไม่เกิน 3 ชุดวิชา' },
+    { code: '41451', name: 'กฎหมายระหว่างประเทศ', credits: 6 },
+    { code: '41461', name: 'กฎหมายปกครอง', credits: 6 },
+    { code: '41463', name: 'องค์ความรู้ด้านกระบวนการยุติธรรม หลักสิทธิมนุษยชน และหลักธรรมาภิบาล', credits: 6 },
+  ],
+  elective_groups: {
+    'กฎหมายทั่วไป': [
+      { code: '41315', name: 'การระงับข้อพิพาททางเลือก', credits: 6 },
+      { code: '41401', name: 'ภาษาอังกฤษสำหรับนักกฎหมาย', credits: 6 },
+      { code: '41402', name: 'ระบบกฎหมายไทยและต่างประเทศ', credits: 6 },
+    ],
+    'กฎหมายสังคม': [
+      { code: '41315', name: 'การระงับข้อพิพาททางเลือก', credits: 6 },
+      { code: '41318', name: 'กฎหมายเกี่ยวกับสวัสดิการสังคม สาธารณสุข และการแพทย์', credits: 6 },
+      { code: '41404', name: 'กฎหมายแรงงาน', credits: 6 },
+      { code: '41405', name: 'กฎหมายสิ่งแวดล้อม', credits: 6 },
+      { code: '41454', name: 'กฎหมายสิทธิมนุษยชน', credits: 6 },
+    ],
+    'กฎหมายธุรกิจ': [
+      { code: '41316', name: 'กฎหมายภาษีอากร', credits: 6 },
+      { code: '41317', name: 'กฎหมายเกี่ยวกับการบังคับคดีและกฎหมายล้มละลาย', credits: 6 },
+      { code: '41404', name: 'กฎหมายแรงงาน', credits: 6 },
+      { code: '41421', name: 'กฎหมายภาษีอากร 1: ภาษีเงินได้', credits: 6 },
+      { code: '41423', name: 'กฎหมายธุรกิจระหว่างประเทศ', credits: 6 },
+      { code: '41452', name: 'สถาบันระหว่างประเทศ', credits: 6 },
+      { code: '41455', name: 'กฎหมายทรัพย์สินทางปัญญา', credits: 6 },
+      { code: '41456', name: 'การคุ้มครองผู้บริโภคและกฎหมายเกี่ยวกับการแข่งขันทางการค้า', credits: 6 },
+      { code: '41457', name: 'กฎหมายภาษีอากร 2: ภาษีทางอ้อมและภาษีทรัพย์สิน', credits: 6 },
+      { code: '41459', name: 'กระบวนการยุติธรรมและระบบศาลไทย', credits: 6 },
+      { code: '41460', name: 'กฎหมายเกี่ยวกับการลงทุน', credits: 6 },
+    ],
+    'กฎหมายมหาชน': [
+      { code: '41005', name: 'การคุ้มครองสิทธิและเสรีภาพของประชาชน', credits: 6 },
+      { code: '41319', name: 'กฎหมายเกี่ยวกับเทคโนโลยีสารสนเทศและการสื่อสาร', credits: 6 },
+      { code: '41320', name: 'กฎหมายเกี่ยวกับที่ดิน', credits: 6 },
+      { code: '41404', name: 'กฎหมายแรงงาน', credits: 6 },
+      { code: '41405', name: 'กฎหมายสิ่งแวดล้อม', credits: 6 },
+      { code: '41421', name: 'กฎหมายภาษีอากร 1: ภาษีเงินได้', credits: 6 },
+      { code: '41454', name: 'กฎหมายสิทธิมนุษยชน', credits: 6 },
+      { code: '41456', name: 'การคุ้มครองผู้บริโภคและกฎหมายเกี่ยวกับการแข่งขันทางการค้า', credits: 6 },
+      { code: '41457', name: 'กฎหมายภาษีอากร 2: ภาษีทางอ้อมและภาษีทรัพย์สิน', credits: 6 },
+      { code: '41459', name: 'กระบวนการยุติธรรมและระบบศาลไทย', credits: 6 },
+      { code: '41460', name: 'กฎหมายเกี่ยวกับการลงทุน', credits: 6 },
+      { code: '41461', name: 'กฎหมายปกครอง', credits: 6 },
+      { code: '41462', name: 'กฎหมายเกี่ยวกับการคลังและงบประมาณ', credits: 6 },
+    ],
+    'กฎหมายอาญาและกระบวนการยุติธรรม': [
+      { code: '41315', name: 'การระงับข้อพิพาททางเลือก', credits: 6 },
+      { code: '41401', name: 'ภาษาอังกฤษสำหรับนักกฎหมาย', credits: 6 },
+      { code: '41402', name: 'ระบบกฎหมายไทยและต่างประเทศ', credits: 6 },
+      { code: '41431', name: 'การบริหารงานยุติธรรม', credits: 6 },
+      { code: '41432', name: 'กฎหมายอาญา 3: ความผิดอาญาตามกฎหมายอื่น', credits: 6 },
+      { code: '41454', name: 'กฎหมายสิทธิมนุษยชน', credits: 6 },
+      { code: '41458', name: 'อาชญากรรมทางธุรกิจ', credits: 6 },
+      { code: '41459', name: 'กระบวนการยุติธรรมและระบบศาลไทย', credits: 6 },
+    ],
+    'กฎหมายระหว่างประเทศ': [
+      { code: '41423', name: 'กฎหมายธุรกิจระหว่างประเทศ', credits: 6 },
+      { code: '41452', name: 'สถาบันระหว่างประเทศ', credits: 6 },
+      { code: '41454', name: 'กฎหมายสิทธิมนุษยชน', credits: 6 },
+    ],
+  }
+};
+
+// Curriculum stored in localStorage, fallback to defaults
+function sortByCode(arr) { return arr.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })); }
+function getCurriculum() {
+  const cur = localStorage.getItem('stou_law_curriculum')
+    ? JSON.parse(localStorage.getItem('stou_law_curriculum'))
+    : JSON.parse(JSON.stringify(DEFAULT_CURRICULUM));
+  // Sort all arrays by course code
+  sortByCode(cur.ge_required);
+  sortByCode(cur.ge_elective_lang);
+  sortByCode(cur.ge_elective_social);
+  sortByCode(cur.ge_elective_human);
+  sortByCode(cur.core);
+  Object.values(cur.elective_groups).forEach(arr => sortByCode(arr));
+  return cur;
+}
+function saveCurriculum(cur) {
+  localStorage.setItem('stou_law_curriculum', JSON.stringify(cur));
+}
+function resetCurriculumToDefault() {
+  if (confirm('รีเซ็ตหลักสูตรกลับเป็นค่าเริ่มต้น? (ข้อมูลที่แก้ไขจะหายไป)')) {
+    localStorage.removeItem('stou_law_curriculum');
+    rebuildCourseLookup();
+    renderCurriculum();
+    populateCourseDropdown();
+  }
+}
+
+// Build flat course lookup
+let ALL_COURSES = {};
+function rebuildCourseLookup() {
+  ALL_COURSES = {};
+  const cur = getCurriculum();
+  function addCourses(arr) { arr.forEach(c => { ALL_COURSES[c.code] = c; }); }
+  addCourses(cur.ge_required);
+  addCourses(cur.ge_elective_lang);
+  addCourses(cur.ge_elective_social);
+  addCourses(cur.ge_elective_human);
+  addCourses(cur.core);
+  Object.values(cur.elective_groups).forEach(arr => addCourses(arr));
+}
+rebuildCourseLookup();
+
+// ===== DATA LAYER =====
+function getData() {
+  const raw = localStorage.getItem('stou_law_data');
+  return raw ? JSON.parse(raw) : { settings: {}, registrations: [] };
+}
+function saveData(data) {
+  localStorage.setItem('stou_law_data', JSON.stringify(data));
+}
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+// ===== TAB NAVIGATION =====
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  const idx = { dashboard: 0, curriculum: 1, registration: 2, expenses: 3 }[name];
+  if (btns[idx]) btns[idx].classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'curriculum') renderCurriculum();
+  if (name === 'registration') renderRegistrations();
+  if (name === 'expenses') renderExpenses();
+}
+
+// ===== COURSE STATUS HELPERS =====
+function getCourseStatus(code) {
+  const data = getData();
+  const regs = data.registrations.filter(r => r.courseCode === code);
+  if (regs.length === 0) return 'notyet';
+  const passed = regs.find(r => r.grade === 'H' || r.grade === 'S' || r.grade === 'S*');
+  if (passed) return 'passed';
+  const pending = regs.find(r => r.grade === 'pending');
+  if (pending) return 'studying';
+  return 'failed';
+}
+function statusBadge(status) {
+  const map = {
+    passed: '<span class="badge badge-passed">ผ่าน</span>',
+    studying: '<span class="badge badge-studying">กำลังเรียน</span>',
+    failed: '<span class="badge badge-u">ไม่ผ่าน</span>',
+    notyet: '<span class="badge badge-notyet">ยังไม่ได้เรียน</span>',
+  };
+  return map[status] || '';
+}
+function gradeBadge(grade) {
+  const map = {
+    H: '<span class="badge badge-h">H</span>',
+    S: '<span class="badge badge-s">S</span>',
+    'S*': '<span class="badge badge-sstar">S*</span>',
+    U: '<span class="badge badge-u">U</span>',
+    pending: '<span class="badge badge-pending">รอผล</span>',
+  };
+  return map[grade] || grade;
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const data = getData();
+  const regs = data.registrations;
+  const passedCodes = new Set();
+  const studyingCodes = new Set();
+  regs.forEach(r => {
+    if (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') passedCodes.add(r.courseCode);
+  });
+  regs.forEach(r => {
+    if (r.grade === 'pending' && !passedCodes.has(r.courseCode)) studyingCodes.add(r.courseCode);
+  });
+  const totalFee = regs.reduce((s, r) => s + (Number(r.fee) || 0), 0);
+  const totalRequired = 23;
+  const pct = Math.round((passedCodes.size / totalRequired) * 100);
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card green"><div class="label">สอบผ่านแล้ว</div><div class="value">${passedCodes.size}/${totalRequired}</div><div class="sub">ชุดวิชา</div></div>
+    <div class="stat-card blue"><div class="label">กำลังเรียน/รอสอบ</div><div class="value">${studyingCodes.size}</div><div class="sub">ชุดวิชา</div></div>
+    <div class="stat-card orange"><div class="label">ค่าใช้จ่ายรวม</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div>
+    <div class="stat-card"><div class="label">เหลืออีก</div><div class="value">${totalRequired - passedCodes.size}</div><div class="sub">ชุดวิชา</div></div>
+  `;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressFill').textContent = pct + '%';
+  document.getElementById('progressText').textContent = `ผ่านแล้ว ${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต`;
+
+  // Current courses
+  const current = regs.filter(r => r.grade === 'pending' && !passedCodes.has(r.courseCode));
+  const curEl = document.getElementById('currentCourses');
+  if (current.length === 0) {
+    curEl.innerHTML = '<p style="color:var(--text-light);font-size:.85rem">ยังไม่มีวิชาที่กำลังเรียน</p>';
+  } else {
+    curEl.innerHTML = current.map(r => `<div class="exam-item"><div><span style="font-weight:600">${r.courseCode}</span> ${r.courseName}</div></div>`).join('');
+  }
+
+  // Upcoming exams
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = regs.filter(r => r.examDate && r.examDate >= today && r.grade === 'pending')
+    .sort((a, b) => a.examDate.localeCompare(b.examDate));
+  const exEl = document.getElementById('upcomingExams');
+  if (upcoming.length === 0) {
+    exEl.innerHTML = '<p style="color:var(--text-light);font-size:.85rem">ยังไม่มีตารางสอบ</p>';
+  } else {
+    exEl.innerHTML = upcoming.slice(0, 5).map(r => {
+      const d = new Date(r.examDate);
+      const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      return `<div class="exam-item">
+        <div class="exam-date"><div class="day">${d.getDate()}</div><div class="month">${months[d.getMonth()]}</div></div>
+        <div class="exam-info"><div class="course">${r.courseCode} ${r.courseName}</div><div class="time">${r.examTime || '-'}</div></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ===== CURRICULUM =====
+function courseRowHtml(c, catKey, idx, groupName) {
+  const st = getCourseStatus(c.code);
+  const editArgs = groupName
+    ? `'elective','${encodeURIComponent(groupName)}',${idx}`
+    : `'${catKey}','',${idx}`;
+  const delArgs = groupName
+    ? `'elective','${encodeURIComponent(groupName)}',${idx}`
+    : `'${catKey}','',${idx}`;
+  return `<tr>
+    <td style="width:80px;font-weight:600">${c.code}</td>
+    <td>${c.name}${c.note ? ' <span style="color:var(--warning);font-size:.75rem">(' + c.note + ')</span>' : ''}</td>
+    <td style="width:60px;text-align:center">${c.credits}</td>
+    <td style="width:100px">${statusBadge(st)}</td>
+    <td style="width:140px">
+      <div class="edit-row">
+        <button class="btn btn-sm btn-outline" onclick="showHistory('${c.code}')">ประวัติ</button>
+        <button class="btn btn-sm btn-outline" onclick="openEditCourse(${editArgs})" title="แก้ไข">แก้</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCourse(${delArgs})" title="ลบ">ลบ</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderCurriculum() {
+  const cur = getCurriculum();
+  let html = '';
+  const totalCourses = cur.ge_required.length + 3 + cur.core.length + 2 + 1; // approx
+  const allCounts = cur.ge_required.length + cur.ge_elective_lang.length + cur.ge_elective_social.length + cur.ge_elective_human.length + cur.core.length;
+  document.getElementById('curriculumSummary').textContent = `วิชาแกน+ศึกษาทั่วไป ${cur.ge_required.length + cur.core.length + 3} ชุดวิชา + เลือก 2 + เสรี 1 = รวมเรียน 23 ชุดวิชา = 138 หน่วยกิต`;
+
+  // GE Required
+  html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — บังคับ</span><span>${cur.ge_required.length} ชุดวิชา = ${cur.ge_required.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>`;
+  cur.ge_required.forEach((c, i) => { html += courseRowHtml(c, 'ge_required', i); });
+  html += '</table></div>';
+
+  // GE Elective
+  html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — เลือก (เลือก 3 ชุดวิชา กลุ่มละ 1)</span><span>3 ชุดวิชา = 18 หน่วยกิต</span></div><div class="cat-body">`;
+  [
+    { title: 'กลุ่มภาษา (เลือก 1)', key: 'ge_elective_lang', courses: cur.ge_elective_lang },
+    { title: 'กลุ่มสังคมศาสตร์ (เลือก 1)', key: 'ge_elective_social', courses: cur.ge_elective_social },
+    { title: 'กลุ่มมนุษยศาสตร์ (เลือก 1)', key: 'ge_elective_human', courses: cur.ge_elective_human },
+  ].forEach(g => {
+    html += `<div class="subgroup">${g.title}</div><table>`;
+    g.courses.forEach((c, i) => { html += courseRowHtml(c, g.key, i); });
+    html += '</table>';
+  });
+  html += '</div>';
+
+  // Core
+  html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาแกน (บังคับ)</span><span>${cur.core.length} ชุดวิชา = ${cur.core.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>`;
+  cur.core.forEach((c, i) => { html += courseRowHtml(c, 'core', i); });
+  html += '</table></div>';
+
+  // Elective Groups
+  html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาเลือก (เลือก 2 ชุดวิชาจาก 1 กลุ่ม)</span><span>2 ชุดวิชา = 12 หน่วยกิต</span></div><div class="cat-body">`;
+  Object.entries(cur.elective_groups).forEach(([gName, courses]) => {
+    html += `<div class="subgroup">กลุ่ม${gName}</div><table>`;
+    courses.forEach((c, i) => { html += courseRowHtml(c, 'elective', i, gName); });
+    html += '</table>';
+  });
+  html += '</div>';
+
+  // Free elective
+  html += `<div class="cat-header"><span>ค. หมวดวิชาเลือกเสรี</span><span>1 ชุดวิชา = 6 หน่วยกิต</span></div>`;
+  html += `<div class="cat-body"><table><tr><td colspan="5" style="color:var(--text-light);padding:12px">เลือกจากชุดวิชาที่เปิดสอนในโครงการสัมฤทธิบัตร หรือชุดวิชาระดับปริญญาตรีของ มสธ.</td></tr></table></div>`;
+
+  document.getElementById('curriculumList').innerHTML = html;
+}
+
+// ===== CURRICULUM EDIT =====
+function openAddCourse() {
+  document.getElementById('courseModalTitle').textContent = 'เพิ่มวิชาใหม่';
+  document.getElementById('courseEditKey').value = '';
+  document.getElementById('courseEditIdx').value = '-1';
+  document.getElementById('courseEditCode').value = '';
+  document.getElementById('courseEditName').value = '';
+  document.getElementById('courseEditCredits').value = '6';
+  document.getElementById('courseEditNote').value = '';
+  document.getElementById('courseEditCategory').value = 'core';
+  updateCategoryUI();
+  document.getElementById('courseModal').classList.add('show');
+}
+
+function openEditCourse(catKey, groupNameEncoded, idx) {
+  const cur = getCurriculum();
+  const groupName = groupNameEncoded ? decodeURIComponent(groupNameEncoded) : '';
+  let course;
+  if (catKey === 'elective') {
+    course = cur.elective_groups[groupName][idx];
+    document.getElementById('courseEditCategory').value = 'elective';
+    document.getElementById('courseEditGroup').value = groupName;
+  } else {
+    course = cur[catKey][idx];
+    document.getElementById('courseEditCategory').value = catKey;
+  }
+  document.getElementById('courseModalTitle').textContent = 'แก้ไขวิชา ' + course.code;
+  document.getElementById('courseEditKey').value = catKey === 'elective' ? 'elective:' + groupName : catKey;
+  document.getElementById('courseEditIdx').value = idx;
+  document.getElementById('courseEditCode').value = course.code;
+  document.getElementById('courseEditName').value = course.name;
+  document.getElementById('courseEditCredits').value = course.credits;
+  document.getElementById('courseEditNote').value = course.note || '';
+  updateCategoryUI();
+  document.getElementById('courseModal').classList.add('show');
+}
+
+function updateCategoryUI() {
+  const cat = document.getElementById('courseEditCategory').value;
+  document.getElementById('courseEditGroupWrap').style.display = cat === 'elective' ? '' : 'none';
+}
+document.getElementById('courseEditCategory').addEventListener('change', updateCategoryUI);
+
+function saveCourseEdit() {
+  const code = document.getElementById('courseEditCode').value.trim();
+  const name = document.getElementById('courseEditName').value.trim();
+  const credits = Number(document.getElementById('courseEditCredits').value) || 6;
+  const note = document.getElementById('courseEditNote').value.trim();
+  if (!code || !name) { alert('กรุณากรอกรหัสวิชาและชื่อวิชา'); return; }
+
+  const cat = document.getElementById('courseEditCategory').value;
+  const editKey = document.getElementById('courseEditKey').value;
+  const idx = Number(document.getElementById('courseEditIdx').value);
+  const course = { code, name, credits };
+  if (note) course.note = note;
+
+  const cur = getCurriculum();
+
+  // Remove old if editing
+  if (idx >= 0 && editKey) {
+    if (editKey.startsWith('elective:')) {
+      const oldGroup = editKey.substring(9);
+      if (cur.elective_groups[oldGroup]) cur.elective_groups[oldGroup].splice(idx, 1);
+    } else {
+      if (cur[editKey]) cur[editKey].splice(idx, 1);
+    }
+  }
+
+  // Add to target
+  if (cat === 'elective') {
+    const groupName = document.getElementById('courseEditGroup').value.trim();
+    if (!groupName) { alert('กรุณากรอกชื่อกลุ่มวิชา'); return; }
+    if (!cur.elective_groups[groupName]) cur.elective_groups[groupName] = [];
+    cur.elective_groups[groupName].push(course);
+  } else {
+    cur[cat].push(course);
+  }
+
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  closeModal('courseModal');
+  renderCurriculum();
+  populateCourseDropdown();
+}
+
+function deleteCourse(catKey, groupNameEncoded, idx) {
+  const groupName = groupNameEncoded ? decodeURIComponent(groupNameEncoded) : '';
+  const cur = getCurriculum();
+  let courseName;
+  if (catKey === 'elective') {
+    courseName = cur.elective_groups[groupName][idx]?.name;
+  } else {
+    courseName = cur[catKey][idx]?.name;
+  }
+  if (!confirm(`ลบวิชา "${courseName}" ออกจากหลักสูตร?`)) return;
+
+  if (catKey === 'elective') {
+    cur.elective_groups[groupName].splice(idx, 1);
+    if (cur.elective_groups[groupName].length === 0) {
+      if (confirm(`กลุ่ม "${groupName}" ไม่มีวิชาเหลือแล้ว ต้องการลบกลุ่มด้วยหรือไม่?`)) {
+        delete cur.elective_groups[groupName];
+      }
+    }
+  } else {
+    cur[catKey].splice(idx, 1);
+  }
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  renderCurriculum();
+  populateCourseDropdown();
+}
+
+// Elective Group management
+function openGroupModal() {
+  const cur = getCurriculum();
+  let html = '';
+  Object.keys(cur.elective_groups).forEach(gName => {
+    const count = cur.elective_groups[gName].length;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span><strong>${gName}</strong> (${count} วิชา)</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-outline" onclick="renameGroup('${gName}')">เปลี่ยนชื่อ</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteGroup('${gName}')">ลบ</button>
+      </div>
+    </div>`;
+  });
+  if (!html) html = '<p style="color:var(--text-light)">ยังไม่มีกลุ่มวิชาเลือก</p>';
+  document.getElementById('groupList').innerHTML = html;
+  document.getElementById('newGroupName').value = '';
+  document.getElementById('groupModal').classList.add('show');
+}
+
+function addElectiveGroup() {
+  const name = document.getElementById('newGroupName').value.trim();
+  if (!name) { alert('กรุณากรอกชื่อกลุ่ม'); return; }
+  const cur = getCurriculum();
+  if (cur.elective_groups[name]) { alert('กลุ่มนี้มีอยู่แล้ว'); return; }
+  cur.elective_groups[name] = [];
+  saveCurriculum(cur);
+  openGroupModal(); // refresh list
+  renderCurriculum();
+  populateCourseDropdown();
+}
+
+function renameGroup(oldName) {
+  const newName = prompt('ชื่อกลุ่มใหม่:', oldName);
+  if (!newName || newName.trim() === oldName) return;
+  const cur = getCurriculum();
+  cur.elective_groups[newName.trim()] = cur.elective_groups[oldName];
+  delete cur.elective_groups[oldName];
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  openGroupModal();
+  renderCurriculum();
+  populateCourseDropdown();
+}
+
+function deleteGroup(name) {
+  const cur = getCurriculum();
+  const count = cur.elective_groups[name]?.length || 0;
+  if (!confirm(`ลบกลุ่ม "${name}" (${count} วิชา)?`)) return;
+  delete cur.elective_groups[name];
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  openGroupModal();
+  renderCurriculum();
+  populateCourseDropdown();
+}
+
+// ===== REGISTRATION =====
+let editingRegId = null;
+
+function populateCourseDropdown() {
+  const dl = document.getElementById('courseList');
+  dl.innerHTML = '';
+  const cur = getCurriculum();
+  const allArrays = [cur.ge_required, cur.ge_elective_lang, cur.ge_elective_social, cur.ge_elective_human, cur.core];
+  Object.values(cur.elective_groups).forEach(arr => allArrays.push(arr));
+  const added = new Set();
+  allArrays.forEach(arr => {
+    arr.forEach(c => {
+      if (added.has(c.code)) return;
+      added.add(c.code);
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.label = `${c.code} — ${c.name}`;
+      dl.appendChild(opt);
+    });
+  });
+  // Free elective option
+  const opt = document.createElement('option');
+  opt.value = 'free';
+  opt.label = 'วิชาเลือกเสรี (กรอกเอง)';
+  dl.appendChild(opt);
+}
+
+function onCourseInput() {
+  const raw = document.getElementById('regCourse').value.trim();
+  const nameEl = document.getElementById('regCourseName');
+  // Extract code — user may type just "41211" or select "41211" from datalist
+  const code = raw.split('—')[0].split(' ')[0].trim();
+  if (code === 'free') {
+    nameEl.readOnly = false;
+    nameEl.value = '';
+    nameEl.style.background = '';
+    nameEl.focus();
+  } else if (ALL_COURSES[code]) {
+    document.getElementById('regCourse').value = code;
+    nameEl.value = ALL_COURSES[code].name;
+    nameEl.readOnly = true;
+    nameEl.style.background = '#f8f9fa';
+  } else if (code.length === 5 && /^\d{5}$/.test(code)) {
+    // Unknown code — allow manual entry
+    nameEl.readOnly = false;
+    nameEl.style.background = '';
+    if (!nameEl.value) nameEl.value = '';
+  } else {
+    nameEl.value = '';
+    nameEl.readOnly = true;
+    nameEl.style.background = '#f8f9fa';
+  }
+}
+
+function saveRegistration(e) {
+  e.preventDefault();
+  const data = getData();
+  const rawCourse = document.getElementById('regCourse').value.trim();
+  const courseCode = rawCourse.split('—')[0].split(' ')[0].trim();
+  if (!courseCode) { alert('กรุณากรอกรหัสวิชา'); return; }
+  const reg = {
+    id: editingRegId || genId(),
+    academicYear: document.getElementById('regYear').value.trim(),
+    semester: document.getElementById('regSemester').value,
+    batch: document.getElementById('regBatch').value.trim(),
+    batchCode: document.getElementById('regBatchCode').value.trim(),
+    studentId: document.getElementById('regStudentId').value.trim(),
+    courseCode: courseCode === 'free' ? 'FREE' : courseCode,
+    courseName: document.getElementById('regCourseName').value.trim(),
+    program: document.getElementById('regProgram').value,
+    fee: Number(document.getElementById('regFee').value) || 0,
+    examDate: document.getElementById('regExamDate').value,
+    examTime: document.getElementById('regExamTime').value.trim(),
+    grade: document.getElementById('regGrade').value,
+    createdAt: editingRegId ? (data.registrations.find(r => r.id === editingRegId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+  };
+
+  if (editingRegId) {
+    const idx = data.registrations.findIndex(r => r.id === editingRegId);
+    if (idx >= 0) data.registrations[idx] = reg;
+    editingRegId = null;
+    document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
+  } else {
+    data.registrations.push(reg);
+  }
+
+  // Save settings for auto-fill
+  if (reg.studentId) data.settings.studentId = reg.studentId;
+  if (reg.batchCode) data.settings.batchCode = reg.batchCode;
+  if (reg.batch) data.settings.batch = reg.batch;
+
+  saveData(data);
+  resetRegForm();
+  renderRegistrations();
+}
+
+function resetRegForm() {
+  editingRegId = null;
+  document.getElementById('regForm').reset();
+  document.getElementById('regCourseName').value = '';
+  document.getElementById('regCourseName').readOnly = true;
+  document.getElementById('regCourseName').style.background = '#f8f9fa';
+  document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
+  // Auto-fill from settings
+  const data = getData();
+  if (data.settings.studentId) document.getElementById('regStudentId').value = data.settings.studentId;
+  if (data.settings.batchCode) document.getElementById('regBatchCode').value = data.settings.batchCode;
+  if (data.settings.batch) document.getElementById('regBatch').value = data.settings.batch;
+}
+
+function renderRegistrations() {
+  const data = getData();
+  let regs = [...data.registrations].sort((a, b) => {
+    const ka = `${a.academicYear}-${a.semester}`;
+    const kb = `${b.academicYear}-${b.semester}`;
+    return kb.localeCompare(ka);
+  });
+
+  // Build filter options
+  const filterEl = document.getElementById('filterSemester');
+  const currentFilter = filterEl.value;
+  const semesters = [...new Set(regs.map(r => `${r.academicYear}/${r.semester}`))].sort().reverse();
+  filterEl.innerHTML = '<option value="">ทุกภาคการศึกษา</option>';
+  semesters.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `ปี ${s.split('/')[0]} ภาค ${s.split('/')[1]}`;
+    if (s === currentFilter) opt.selected = true;
+    filterEl.appendChild(opt);
+  });
+
+  if (currentFilter) {
+    const [fy, fs] = currentFilter.split('/');
+    regs = regs.filter(r => r.academicYear === fy && r.semester === fs);
+  }
+
+  const tbody = document.getElementById('regTableBody');
+  if (regs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:20px">ยังไม่มีรายการลงทะเบียน</td></tr>';
+    return;
+  }
+  tbody.innerHTML = regs.map(r => `<tr>
+    <td>${r.academicYear}/${r.semester}</td>
+    <td style="font-weight:600">${r.courseCode}</td>
+    <td>${r.courseName}</td>
+    <td>${r.program === 'certificate' ? '<span class="badge badge-cert">สัมฤทธิบัตร</span>' : '<span class="badge badge-normal">ปกติ</span>'}</td>
+    <td style="text-align:right">${(r.fee || 0).toLocaleString()}</td>
+    <td>${r.examDate || '-'}</td>
+    <td>${gradeBadge(r.grade)}</td>
+    <td>
+      <button class="btn btn-sm btn-primary" onclick="openGradeModal('${r.id}')" title="บันทึกผล">ผล</button>
+      <button class="btn btn-sm btn-outline" onclick="editRegistration('${r.id}')" title="แก้ไข">แก้</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteRegistration('${r.id}')" title="ลบ">ลบ</button>
+    </td>
+  </tr>`).join('');
+}
+
+function editRegistration(id) {
+  const data = getData();
+  const r = data.registrations.find(x => x.id === id);
+  if (!r) return;
+  editingRegId = id;
+  document.getElementById('regYear').value = r.academicYear;
+  document.getElementById('regSemester').value = r.semester;
+  document.getElementById('regBatch').value = r.batch || '';
+  document.getElementById('regBatchCode').value = r.batchCode || '';
+  document.getElementById('regStudentId').value = r.studentId || '';
+  document.getElementById('regProgram').value = r.program;
+  document.getElementById('regFee').value = r.fee || '';
+  document.getElementById('regExamDate').value = r.examDate || '';
+  document.getElementById('regExamTime').value = r.examTime || '';
+  document.getElementById('regGrade').value = r.grade;
+
+  const courseSelect = document.getElementById('regCourse');
+  if (r.courseCode === 'FREE') {
+    courseSelect.value = 'free';
+    document.getElementById('regCourseName').readOnly = false;
+    document.getElementById('regCourseName').style.background = '';
+  } else {
+    courseSelect.value = r.courseCode;
+  }
+  document.getElementById('regCourseName').value = r.courseName;
+  document.getElementById('regSubmitBtn').textContent = 'อัปเดตการลงทะเบียน';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteRegistration(id) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  const data = getData();
+  data.registrations = data.registrations.filter(r => r.id !== id);
+  saveData(data);
+  renderRegistrations();
+}
+
+// Grade Modal
+function openGradeModal(id) {
+  document.getElementById('gradeRegId').value = id;
+  const data = getData();
+  const r = data.registrations.find(x => x.id === id);
+  if (r) document.getElementById('gradeSelect').value = r.grade;
+  document.getElementById('gradeModal').classList.add('show');
+}
+function saveGrade() {
+  const id = document.getElementById('gradeRegId').value;
+  const grade = document.getElementById('gradeSelect').value;
+  const data = getData();
+  const r = data.registrations.find(x => x.id === id);
+  if (r) { r.grade = grade; saveData(data); }
+  closeModal('gradeModal');
+  renderRegistrations();
+}
+
+// History Modal
+function showHistory(code) {
+  const data = getData();
+  const regs = data.registrations.filter(r => r.courseCode === code).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const course = ALL_COURSES[code];
+  document.getElementById('historyTitle').textContent = `ประวัติ: ${code} ${course ? course.name : ''}`;
+  if (regs.length === 0) {
+    document.getElementById('historyContent').innerHTML = '<p style="color:var(--text-light)">ยังไม่มีประวัติการลงทะเบียน</p>';
+  } else {
+    document.getElementById('historyContent').innerHTML = `<table>
+      <thead><tr><th>ครั้งที่</th><th>ปี/ภาค</th><th>โครงการ</th><th>ค่าลงทะเบียน</th><th>ผลสอบ</th></tr></thead>
+      <tbody>${regs.map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${r.academicYear}/${r.semester}</td>
+        <td>${r.program === 'certificate' ? 'สัมฤทธิบัตร' : 'ปกติ'}</td>
+        <td style="text-align:right">${(r.fee || 0).toLocaleString()}</td>
+        <td>${gradeBadge(r.grade)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+  document.getElementById('historyModal').classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ===== EXPENSES =====
+function renderExpenses() {
+  const data = getData();
+  const regs = data.registrations;
+  const totalFee = regs.reduce((s, r) => s + (Number(r.fee) || 0), 0);
+
+  const passedCodes = new Set();
+  regs.forEach(r => {
+    if (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') passedCodes.add(r.courseCode);
+  });
+  const remaining = 23 - passedCodes.size;
+  const estimatedRemaining = remaining * 1000; // estimate 1000/course
+
+  document.getElementById('expenseStats').innerHTML = `
+    <div class="stat-card orange"><div class="label">จ่ายไปแล้ว</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div>
+    <div class="stat-card blue"><div class="label">ประมาณการที่เหลือ</div><div class="value">${estimatedRemaining.toLocaleString()}</div><div class="sub">บาท (${remaining} วิชา x 1,000)</div></div>
+    <div class="stat-card"><div class="label">รวมประมาณการทั้งหมด</div><div class="value">${(totalFee + estimatedRemaining).toLocaleString()}</div><div class="sub">บาท</div></div>
+  `;
+
+  // Fee breakdown
+  const regCount = regs.length;
+  const tbody = document.getElementById('expenseTableBody');
+  const rows = [
+    { label: 'ค่าลงทะเบียนจากบันทึก', count: `${regCount} รายการ`, unit: '-', total: totalFee },
+  ];
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${r.label}</td>
+    <td style="text-align:center">${r.count}</td>
+    <td style="text-align:right">${r.unit}</td>
+    <td style="text-align:right;font-weight:600">${r.total.toLocaleString()}</td>
+  </tr>`).join('');
+  tbody.innerHTML += `<tr style="font-weight:700;background:#f8f9fa">
+    <td colspan="3">รวมจ่ายจริง</td>
+    <td style="text-align:right">${totalFee.toLocaleString()} บาท</td>
+  </tr>`;
+
+  // By semester
+  const bySem = {};
+  regs.forEach(r => {
+    const key = `${r.academicYear}/${r.semester}`;
+    if (!bySem[key]) bySem[key] = { count: 0, fee: 0 };
+    bySem[key].count++;
+    bySem[key].fee += Number(r.fee) || 0;
+  });
+  const semTbody = document.getElementById('expenseBySemester');
+  const semKeys = Object.keys(bySem).sort().reverse();
+  if (semKeys.length === 0) {
+    semTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีข้อมูล</td></tr>';
+  } else {
+    semTbody.innerHTML = semKeys.map(k => `<tr>
+      <td>ปี ${k.split('/')[0]} ภาค ${k.split('/')[1]}</td>
+      <td style="text-align:center">${bySem[k].count}</td>
+      <td style="text-align:right;font-weight:600">${bySem[k].fee.toLocaleString()}</td>
+    </tr>`).join('');
+  }
+}
+
+// ===== EXPORT / IMPORT =====
+function exportData() {
+  const data = getData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `stou-law-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.registrations) {
+        if (confirm(`นำเข้าข้อมูล ${data.registrations.length} รายการ? (ข้อมูลเดิมจะถูกแทนที่)`)) {
+          saveData(data);
+          showTab('dashboard');
+          alert('นำเข้าข้อมูลเรียบร้อยแล้ว');
+        }
+      } else {
+        alert('ไฟล์ไม่ถูกต้อง');
+      }
+    } catch (err) {
+      alert('ไม่สามารถอ่านไฟล์ได้: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ===== INIT =====
+populateCourseDropdown();
+renderDashboard();
+resetRegForm();
+</script>
+</body>
+</html>
