@@ -127,6 +127,13 @@ tr:hover { background: #f8f9fa; }
 .edit-row { display: flex; gap: 4px; }
 .edit-row button { padding: 2px 6px; font-size: .75rem; }
 
+/* Fee Rows */
+.fee-row { display:flex; gap:6px; align-items:center; }
+.fee-row input { flex:1; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius); font-size:.85rem; }
+.fee-row input:first-child { flex:2; }
+.fee-row button { background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem; padding:2px 6px; }
+.fee-row button:hover { background:#fadbd8; border-radius:4px; }
+
 /* Lock Screen */
 #lockScreen { display:flex; min-height:100vh; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--primary),var(--primary-light)); }
 .lock-card { background:#fff; border-radius:16px; padding:40px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.2); }
@@ -265,9 +272,13 @@ tr:hover { background: #f8f9fa; }
             <label>ชื่อวิชา</label>
             <input type="text" id="regCourseName" readonly style="background:#f8f9fa">
           </div>
-          <div class="form-group">
-            <label>ค่าลงทะเบียน (บาท)</label>
-            <input type="number" id="regFee" placeholder="เช่น 1000" min="0">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>ค่าธรรมเนียม (บาท)</label>
+            <div id="feeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+              <button type="button" class="btn btn-sm btn-outline" onclick="addFeeRow()">+ เพิ่มรายการ</button>
+              <span style="font-size:.85rem;font-weight:600;color:var(--primary)" id="feeTotalDisplay">รวม: 0 บาท</span>
+            </div>
           </div>
           <div class="form-group">
             <label>วันสอบ</label>
@@ -1145,12 +1156,48 @@ function onCourseInput() {
   }
 }
 
+// ===== FEE ROWS =====
+function addFeeRow(label, amount) {
+  const container = document.getElementById('feeRows');
+  const row = document.createElement('div');
+  row.className = 'fee-row';
+  row.innerHTML = `<input type="text" placeholder="รายการ เช่น ค่าชุดวิชา" value="${label || ''}"><input type="number" placeholder="จำนวนเงิน" min="0" value="${amount || ''}" oninput="updateFeeTotal()"><button type="button" onclick="this.parentElement.remove();updateFeeTotal()">✕</button>`;
+  container.appendChild(row);
+  updateFeeTotal();
+}
+function updateFeeTotal() {
+  const rows = document.querySelectorAll('#feeRows .fee-row');
+  let total = 0;
+  rows.forEach(r => { total += Number(r.querySelector('input[type=number]').value) || 0; });
+  document.getElementById('feeTotalDisplay').textContent = `รวม: ${total.toLocaleString()} บาท`;
+}
+function getFeeItems() {
+  const rows = document.querySelectorAll('#feeRows .fee-row');
+  const items = [];
+  rows.forEach(r => {
+    const label = r.querySelector('input[type=text]').value.trim();
+    const amount = Number(r.querySelector('input[type=number]').value) || 0;
+    if (label || amount) items.push({ label, amount });
+  });
+  return items;
+}
+function setFeeItems(items) {
+  document.getElementById('feeRows').innerHTML = '';
+  if (items && items.length > 0) {
+    items.forEach(f => addFeeRow(f.label, f.amount));
+  } else {
+    addFeeRow('ค่าชุดวิชา', '');
+  }
+}
+
 function saveRegistration(e) {
   e.preventDefault();
   const data = getData();
   const rawCourse = document.getElementById('regCourse').value.trim();
   const courseCode = rawCourse.split('—')[0].split(' ')[0].trim();
   if (!courseCode) { alert('กรุณากรอกรหัสวิชา'); return; }
+  const feeItems = getFeeItems();
+  const totalFee = feeItems.reduce((s, f) => s + f.amount, 0);
   const reg = {
     id: editingRegId || genId(),
     academicYear: document.getElementById('regYear').value.trim(),
@@ -1161,7 +1208,8 @@ function saveRegistration(e) {
     courseCode: courseCode === 'free' ? 'FREE' : courseCode,
     courseName: document.getElementById('regCourseName').value.trim(),
     program: document.getElementById('regProgram').value,
-    fee: Number(document.getElementById('regFee').value) || 0,
+    fee: totalFee,
+    feeItems: feeItems,
     examDate: document.getElementById('regExamDate').value,
     examTime: document.getElementById('regExamTime').value.trim(),
     grade: document.getElementById('regGrade').value,
@@ -1194,6 +1242,7 @@ function resetRegForm() {
   document.getElementById('regCourseName').readOnly = true;
   document.getElementById('regCourseName').style.background = '#f8f9fa';
   document.getElementById('regSubmitBtn').textContent = 'บันทึกการลงทะเบียน';
+  setFeeItems(null);
   // Auto-fill from settings
   const data = getData();
   if (data.settings.studentId) document.getElementById('regStudentId').value = data.settings.studentId;
@@ -1237,7 +1286,7 @@ function renderRegistrations() {
     <td style="font-weight:600">${r.courseCode}</td>
     <td>${r.courseName}</td>
     <td>${r.program === 'certificate' ? '<span class="badge badge-cert">สัมฤทธิบัตร</span>' : '<span class="badge badge-normal">ปกติ</span>'}</td>
-    <td style="text-align:right">${(r.fee || 0).toLocaleString()}</td>
+    <td style="text-align:right;cursor:help" title="${(r.feeItems||[]).map(f=>f.label+': '+f.amount.toLocaleString()).join('\n')||'ไม่มีรายละเอียด'}">${(r.fee || 0).toLocaleString()}</td>
     <td>${r.examDate || '-'}</td>
     <td>${gradeBadge(r.grade)}</td>
     <td>
@@ -1259,7 +1308,13 @@ function editRegistration(id) {
   document.getElementById('regBatchCode').value = r.batchCode || '';
   document.getElementById('regStudentId').value = r.studentId || '';
   document.getElementById('regProgram').value = r.program;
-  document.getElementById('regFee').value = r.fee || '';
+  if (r.feeItems && r.feeItems.length > 0) {
+    setFeeItems(r.feeItems);
+  } else if (r.fee) {
+    setFeeItems([{ label: 'ค่าลงทะเบียน', amount: r.fee }]);
+  } else {
+    setFeeItems(null);
+  }
   document.getElementById('regExamDate').value = r.examDate || '';
   document.getElementById('regExamTime').value = r.examTime || '';
   document.getElementById('regGrade').value = r.grade;
