@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ระบบการเรียนนิติศาสตร์ มสธ.</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root {
   --primary: #1a5276;
@@ -124,6 +127,18 @@ tr:hover { background: #f8f9fa; }
 .edit-row { display: flex; gap: 4px; }
 .edit-row button { padding: 2px 6px; font-size: .75rem; }
 
+/* Lock Screen */
+#lockScreen { display:flex; min-height:100vh; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--primary),var(--primary-light)); }
+.lock-card { background:#fff; border-radius:16px; padding:40px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.2); }
+.lock-card h1 { font-size:1.5rem; color:var(--primary); margin-bottom:4px; }
+.lock-card p { font-size:.85rem; color:var(--text-light); margin-bottom:20px; }
+.lock-card input { width:100%; padding:12px; border:1px solid var(--border); border-radius:var(--radius); font-size:1rem; margin-bottom:12px; text-align:center; letter-spacing:2px; }
+.lock-card input:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(41,128,185,.15); }
+.lock-card .btn { width:100%; padding:12px; font-size:1rem; }
+.lock-card .lock-error { color:var(--danger); font-size:.85rem; margin-top:8px; min-height:20px; }
+.lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
+#appMain { display:none; }
+
 /* Responsive */
 @media (max-width: 600px) {
   .nav { flex-wrap: wrap; }
@@ -136,6 +151,20 @@ tr:hover { background: #f8f9fa; }
 </head>
 <body>
 
+<!-- Lock Screen -->
+<div id="lockScreen">
+  <div class="lock-card">
+    <h1>STOU Law</h1>
+    <p id="lockMsg">ระบบการเรียนนิติศาสตร์ มสธ.</p>
+    <input type="password" id="lockPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="lock-error" id="lockError"></div>
+    <div class="lock-sub" id="lockSub">กำลังเชื่อมต่อ...</div>
+  </div>
+</div>
+
+<!-- Main App (hidden until login) -->
+<div id="appMain">
 <nav class="nav">
   <div class="nav-brand">STOU Law</div>
   <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
@@ -146,6 +175,7 @@ tr:hover { background: #f8f9fa; }
     <button onclick="exportData()" title="Export ข้อมูล">Export</button>
     <button onclick="document.getElementById('importFile').click()" title="Import ข้อมูล">Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <button onclick="doLogout()" title="ออกจากระบบ" style="background:rgba(231,76,60,.6)">Logout</button>
   </div>
 </nav>
 
@@ -351,6 +381,9 @@ tr:hover { background: #f8f9fa; }
   </div>
 </div>
 
+<!-- Close #appMain -->
+</div>
+
 <!-- Course Edit Modal -->
 <div class="modal-overlay" id="courseModal">
   <div class="modal">
@@ -427,6 +460,171 @@ tr:hover { background: #f8f9fa; }
 </div>
 
 <script>
+// ===== FIREBASE INIT =====
+const firebaseConfig = {
+  apiKey: "AIzaSyACg_f01-He61ItP-hTiI1LUvMcSQA_7ec",
+  authDomain: "stou-law.firebaseapp.com",
+  databaseURL: "https://stou-law-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "stou-law",
+  storageBucket: "stou-law.firebasestorage.app",
+  messagingSenderId: "638991856768",
+  appId: "1:638991856768:web:a38f05b3ce93d30277a265"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+let DB_REF = null; // set after login
+let APP_DATA = { settings: {}, registrations: [] };
+let APP_CURRICULUM = null;
+
+// ===== AUTH / LOGIN =====
+async function hashPass(pass) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const pass = document.getElementById('lockPass').value.trim();
+  if (!pass) { document.getElementById('lockError').textContent = 'กรุณากรอกรหัสผ่าน'; return; }
+  document.getElementById('lockError').textContent = '';
+  document.getElementById('lockSub').textContent = 'กำลังตรวจสอบ...';
+  try {
+    // Anonymous auth
+    let user = auth.currentUser;
+    if (!user) { const cred = await auth.signInAnonymously(); user = cred.user; }
+    const hash = await hashPass(pass);
+    // Check stored password hash
+    const snap = await db.ref('auth/passHash').once('value');
+    const storedHash = snap.val();
+    if (!storedHash) {
+      // First time — set password
+      await db.ref('auth/passHash').set(hash);
+      localStorage.setItem('stou_session', hash);
+      enterApp();
+    } else if (storedHash === hash) {
+      localStorage.setItem('stou_session', hash);
+      enterApp();
+    } else {
+      document.getElementById('lockError').textContent = 'รหัสผ่านไม่ถูกต้อง';
+      document.getElementById('lockSub').textContent = '';
+    }
+  } catch(e) {
+    document.getElementById('lockError').textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+    document.getElementById('lockSub').textContent = '';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('stou_session');
+  document.getElementById('appMain').style.display = 'none';
+  document.getElementById('lockScreen').style.display = 'flex';
+  document.getElementById('lockPass').value = '';
+  document.getElementById('lockError').textContent = '';
+  document.getElementById('lockSub').textContent = '';
+}
+
+async function checkSession() {
+  try {
+    let user = auth.currentUser;
+    if (!user) { const cred = await auth.signInAnonymously(); user = cred.user; }
+    const savedHash = localStorage.getItem('stou_session');
+    if (!savedHash) { document.getElementById('lockSub').textContent = 'ใส่รหัสผ่านเพื่อเข้าสู่ระบบ'; return; }
+    const snap = await db.ref('auth/passHash').once('value');
+    const storedHash = snap.val();
+    if (!storedHash) {
+      // No password set yet
+      document.getElementById('lockSub').textContent = 'ตั้งรหัสผ่านครั้งแรกเพื่อเริ่มใช้งาน';
+      document.getElementById('lockMsg').textContent = 'ตั้งรหัสผ่านใหม่';
+    } else if (storedHash === savedHash) {
+      enterApp();
+    } else {
+      localStorage.removeItem('stou_session');
+      document.getElementById('lockSub').textContent = 'ใส่รหัสผ่านเพื่อเข้าสู่ระบบ';
+    }
+  } catch(e) {
+    document.getElementById('lockSub').textContent = 'เชื่อมต่อ Firebase ไม่ได้: ' + e.message;
+  }
+}
+
+async function enterApp() {
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('appMain').style.display = 'block';
+  // Load data from Firebase
+  await loadAllData();
+  rebuildCourseLookup();
+  populateCourseDropdown();
+  renderDashboard();
+  resetRegForm();
+}
+
+// ===== FIREBASE DATA LAYER =====
+async function loadAllData() {
+  const snap = await db.ref('data').once('value');
+  APP_DATA = snap.val() || { settings: {}, registrations: [] };
+  if (!APP_DATA.settings) APP_DATA.settings = {};
+  if (!APP_DATA.registrations) APP_DATA.registrations = [];
+  // Convert registrations object to array if needed
+  if (!Array.isArray(APP_DATA.registrations)) {
+    APP_DATA.registrations = Object.values(APP_DATA.registrations);
+  }
+  const curSnap = await db.ref('curriculum').once('value');
+  APP_CURRICULUM = curSnap.val() || null;
+  // Convert elective_groups sub-arrays
+  if (APP_CURRICULUM && APP_CURRICULUM.elective_groups) {
+    Object.keys(APP_CURRICULUM.elective_groups).forEach(k => {
+      if (!Array.isArray(APP_CURRICULUM.elective_groups[k])) {
+        APP_CURRICULUM.elective_groups[k] = Object.values(APP_CURRICULUM.elective_groups[k]);
+      }
+    });
+  }
+}
+function saveDataToFirebase() {
+  db.ref('data').set(APP_DATA);
+}
+function saveCurriculumToFirebase() {
+  db.ref('curriculum').set(APP_CURRICULUM);
+}
+
+function getData() {
+  return APP_DATA;
+}
+function saveData(data) {
+  APP_DATA = data;
+  saveDataToFirebase();
+}
+function getCurriculum() {
+  const cur = APP_CURRICULUM || JSON.parse(JSON.stringify(DEFAULT_CURRICULUM));
+  sortByCode(cur.ge_required);
+  sortByCode(cur.ge_elective_lang);
+  sortByCode(cur.ge_elective_social);
+  sortByCode(cur.ge_elective_human);
+  sortByCode(cur.core);
+  if (cur.elective_groups) {
+    Object.keys(cur.elective_groups).forEach(k => {
+      if (!Array.isArray(cur.elective_groups[k])) {
+        cur.elective_groups[k] = Object.values(cur.elective_groups[k]);
+      }
+      sortByCode(cur.elective_groups[k]);
+    });
+  }
+  return cur;
+}
+function saveCurriculum(cur) {
+  APP_CURRICULUM = cur;
+  saveCurriculumToFirebase();
+}
+function sortByCode(arr) { return arr.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })); }
+
+function resetCurriculumToDefault() {
+  if (confirm('รีเซ็ตหลักสูตรกลับเป็นค่าเริ่มต้น? (ข้อมูลที่แก้ไขจะหายไป)')) {
+    APP_CURRICULUM = null;
+    db.ref('curriculum').remove();
+    rebuildCourseLookup();
+    renderCurriculum();
+    populateCourseDropdown();
+  }
+}
+
 // ===== CURRICULUM DATA =====
 const DEFAULT_CURRICULUM = {
   ge_required: [
@@ -537,33 +735,6 @@ const DEFAULT_CURRICULUM = {
   }
 };
 
-// Curriculum stored in localStorage, fallback to defaults
-function sortByCode(arr) { return arr.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })); }
-function getCurriculum() {
-  const cur = localStorage.getItem('stou_law_curriculum')
-    ? JSON.parse(localStorage.getItem('stou_law_curriculum'))
-    : JSON.parse(JSON.stringify(DEFAULT_CURRICULUM));
-  // Sort all arrays by course code
-  sortByCode(cur.ge_required);
-  sortByCode(cur.ge_elective_lang);
-  sortByCode(cur.ge_elective_social);
-  sortByCode(cur.ge_elective_human);
-  sortByCode(cur.core);
-  Object.values(cur.elective_groups).forEach(arr => sortByCode(arr));
-  return cur;
-}
-function saveCurriculum(cur) {
-  localStorage.setItem('stou_law_curriculum', JSON.stringify(cur));
-}
-function resetCurriculumToDefault() {
-  if (confirm('รีเซ็ตหลักสูตรกลับเป็นค่าเริ่มต้น? (ข้อมูลที่แก้ไขจะหายไป)')) {
-    localStorage.removeItem('stou_law_curriculum');
-    rebuildCourseLookup();
-    renderCurriculum();
-    populateCourseDropdown();
-  }
-}
-
 // Build flat course lookup
 let ALL_COURSES = {};
 function rebuildCourseLookup() {
@@ -577,16 +748,7 @@ function rebuildCourseLookup() {
   addCourses(cur.core);
   Object.values(cur.elective_groups).forEach(arr => addCourses(arr));
 }
-rebuildCourseLookup();
 
-// ===== DATA LAYER =====
-function getData() {
-  const raw = localStorage.getItem('stou_law_data');
-  return raw ? JSON.parse(raw) : { settings: {}, registrations: [] };
-}
-function saveData(data) {
-  localStorage.setItem('stou_law_data', JSON.stringify(data));
-}
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
@@ -1261,9 +1423,7 @@ function importData(e) {
 }
 
 // ===== INIT =====
-populateCourseDropdown();
-renderDashboard();
-resetRegForm();
+checkSession();
 </script>
 </body>
 </html>
