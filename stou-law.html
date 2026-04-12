@@ -417,6 +417,69 @@ tr:hover { background:var(--primary-soft); }
       <h2>ค่าลงทะเบียนแยกตามภาคการศึกษา</h2>
       <div id="expenseBySemester"></div>
     </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <h2 style="margin-bottom:0">ค่าใช้จ่ายอื่น ๆ</h2>
+        <button class="btn btn-sm btn-primary" onclick="openOtherExpenseForm()">+ เพิ่มรายการ</button>
+      </div>
+      <div id="otherExpenseForm" style="display:none;margin-bottom:16px;padding:16px;background:var(--primary-soft);border-radius:var(--radius)">
+        <div class="form-grid" style="gap:10px">
+          <div class="form-group">
+            <label>ประเภท</label>
+            <select id="oeCategory" onchange="onOeCategoryChange()">
+              <option value="admission">สมัครนักศึกษา/ค่าแรกเข้า</option>
+              <option value="maintenance">ค่ารักษาสถานภาพ</option>
+              <option value="graduation">สอบจบ/ขึ้นทะเบียนบัณฑิต</option>
+              <option value="record_change">เปลี่ยนแปลงทะเบียนประวัติ</option>
+              <option value="other">อื่น ๆ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>รายละเอียด</label>
+            <input type="text" id="oeDetail" placeholder="เช่น ค่าธรรมเนียมแรกเข้า">
+          </div>
+          <div class="form-group">
+            <label>จำนวนเงิน (บาท)</label>
+            <input type="number" id="oeAmount" placeholder="เช่น 800" min="0">
+          </div>
+          <div class="form-group">
+            <label>วันที่</label>
+            <input type="date" id="oeDate">
+          </div>
+          <div class="form-group">
+            <label>ปีการศึกษา</label>
+            <input type="text" id="oeYear" placeholder="เช่น 2568">
+          </div>
+          <div class="form-group">
+            <label>ภาค</label>
+            <select id="oeSemester">
+              <option value="">-</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="summer">ฤดูร้อน</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="oeSaveBtn" onclick="saveOtherExpense()">บันทึก</button>
+          <button class="btn btn-outline" onclick="closeOtherExpenseForm()">ยกเลิก</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ประเภท</th>
+              <th>รายละเอียด</th>
+              <th>จำนวนเงิน</th>
+              <th>วันที่</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="otherExpenseTable"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -642,9 +705,13 @@ async function loadAllData() {
   APP_DATA = snap.val() || { settings: {}, registrations: [] };
   if (!APP_DATA.settings) APP_DATA.settings = {};
   if (!APP_DATA.registrations) APP_DATA.registrations = [];
+  if (!APP_DATA.otherExpenses) APP_DATA.otherExpenses = [];
   // Convert registrations object to array if needed
   if (!Array.isArray(APP_DATA.registrations)) {
     APP_DATA.registrations = Object.values(APP_DATA.registrations);
+  }
+  if (!Array.isArray(APP_DATA.otherExpenses)) {
+    APP_DATA.otherExpenses = Object.values(APP_DATA.otherExpenses);
   }
   const curSnap = await db.ref('curriculum').once('value');
   APP_CURRICULUM = curSnap.val() || null;
@@ -1667,13 +1734,15 @@ function calcTotalExpenses(regs) {
       totalOtherFee += Number(r.fee) || 0;
     }
   });
-  return { totalCourseFee, totalTransferFee, totalOtherFee, total: totalCourseFee + totalTransferFee + totalOtherFee };
+  const oeItems = getOtherExpenses();
+  const totalOtherExpenses = oeItems.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  return { totalCourseFee, totalTransferFee, totalOtherFee, totalOtherExpenses, total: totalCourseFee + totalTransferFee + totalOtherFee + totalOtherExpenses };
 }
 
 function renderExpenses() {
   const data = getData();
   const regs = data.registrations;
-  const { totalCourseFee, totalTransferFee, totalOtherFee, total } = calcTotalExpenses(regs);
+  const { totalCourseFee, totalTransferFee, totalOtherFee, totalOtherExpenses, total } = calcTotalExpenses(regs);
 
   const passedCodes = new Set();
   regs.forEach(r => {
@@ -1702,10 +1771,15 @@ function renderExpenses() {
     <td style="text-align:right">-</td>
     <td style="text-align:right;font-weight:600">${totalTransferFee.toLocaleString()}</td>
   </tr><tr>
-    <td>ค่าธรรมเนียมอื่น ๆ</td>
+    <td>ค่าธรรมเนียมลงทะเบียน</td>
     <td style="text-align:center">-</td>
     <td style="text-align:right">-</td>
     <td style="text-align:right;font-weight:600">${totalOtherFee.toLocaleString()}</td>
+  </tr><tr>
+    <td>ค่าใช้จ่ายอื่น ๆ (สมัคร/รักษาสถานภาพ/สอบจบ ฯลฯ)</td>
+    <td style="text-align:center">${getOtherExpenses().length} รายการ</td>
+    <td style="text-align:right">-</td>
+    <td style="text-align:right;font-weight:600">${totalOtherExpenses.toLocaleString()}</td>
   </tr><tr style="font-weight:700;background:var(--primary-soft)">
     <td colspan="3">รวมจ่ายจริง</td>
     <td style="text-align:right">${total.toLocaleString()} บาท</td>
@@ -1776,6 +1850,120 @@ function renderExpenses() {
       </div>`;
     }).join('');
   }
+  renderOtherExpenseTable();
+}
+
+// ===== OTHER EXPENSES =====
+const OE_CATEGORIES = {
+  admission: 'สมัครนักศึกษา/ค่าแรกเข้า',
+  maintenance: 'ค่ารักษาสถานภาพ',
+  graduation: 'สอบจบ/ขึ้นทะเบียนบัณฑิต',
+  record_change: 'เปลี่ยนแปลงทะเบียนประวัติ',
+  other: 'อื่น ๆ',
+};
+let editingOeId = null;
+
+function openOtherExpenseForm() {
+  editingOeId = null;
+  document.getElementById('oeCategory').value = 'admission';
+  document.getElementById('oeDetail').value = '';
+  document.getElementById('oeAmount').value = '';
+  document.getElementById('oeDate').value = '';
+  document.getElementById('oeYear').value = '';
+  document.getElementById('oeSemester').value = '';
+  document.getElementById('oeSaveBtn').textContent = 'บันทึก';
+  document.getElementById('otherExpenseForm').style.display = 'block';
+}
+function closeOtherExpenseForm() {
+  document.getElementById('otherExpenseForm').style.display = 'none';
+  editingOeId = null;
+}
+function onOeCategoryChange() {
+  // placeholder update based on category
+}
+
+function saveOtherExpense() {
+  const amount = Number(document.getElementById('oeAmount').value);
+  if (!amount) { alert('กรุณากรอกจำนวนเงิน'); return; }
+  const data = getData();
+  if (!data.otherExpenses) data.otherExpenses = [];
+  // Convert to array if needed
+  if (!Array.isArray(data.otherExpenses)) data.otherExpenses = Object.values(data.otherExpenses);
+
+  const cat = document.getElementById('oeCategory').value;
+  const item = {
+    id: editingOeId || genId(),
+    category: cat,
+    label: OE_CATEGORIES[cat] || cat,
+    detail: document.getElementById('oeDetail').value.trim(),
+    amount: amount,
+    date: document.getElementById('oeDate').value,
+    academicYear: document.getElementById('oeYear').value.trim(),
+    semester: document.getElementById('oeSemester').value,
+  };
+
+  if (editingOeId) {
+    const idx = data.otherExpenses.findIndex(x => x.id === editingOeId);
+    if (idx >= 0) data.otherExpenses[idx] = item;
+  } else {
+    data.otherExpenses.push(item);
+  }
+  saveData(data);
+  closeOtherExpenseForm();
+  renderExpenses();
+}
+
+function editOtherExpense(id) {
+  const data = getData();
+  if (!data.otherExpenses) return;
+  const items = Array.isArray(data.otherExpenses) ? data.otherExpenses : Object.values(data.otherExpenses);
+  const item = items.find(x => x.id === id);
+  if (!item) return;
+  editingOeId = id;
+  document.getElementById('oeCategory').value = item.category || 'other';
+  document.getElementById('oeDetail').value = item.detail || '';
+  document.getElementById('oeAmount').value = item.amount || '';
+  document.getElementById('oeDate').value = item.date || '';
+  document.getElementById('oeYear').value = item.academicYear || '';
+  document.getElementById('oeSemester').value = item.semester || '';
+  document.getElementById('oeSaveBtn').textContent = 'อัปเดต';
+  document.getElementById('otherExpenseForm').style.display = 'block';
+  document.getElementById('otherExpenseForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteOtherExpense(id) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  const data = getData();
+  if (!data.otherExpenses) return;
+  if (!Array.isArray(data.otherExpenses)) data.otherExpenses = Object.values(data.otherExpenses);
+  data.otherExpenses = data.otherExpenses.filter(x => x.id !== id);
+  saveData(data);
+  renderExpenses();
+}
+
+function getOtherExpenses() {
+  const data = getData();
+  if (!data.otherExpenses) return [];
+  return Array.isArray(data.otherExpenses) ? data.otherExpenses : Object.values(data.otherExpenses);
+}
+
+function renderOtherExpenseTable() {
+  const items = getOtherExpenses();
+  const tbody = document.getElementById('otherExpenseTable');
+  if (items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีรายการ</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(item => `<tr>
+    <td><span class="badge badge-normal">${item.label || OE_CATEGORIES[item.category] || item.category}</span></td>
+    <td>${item.detail || '-'}</td>
+    <td style="text-align:right;font-weight:600">${(item.amount || 0).toLocaleString()}</td>
+    <td>${item.date || '-'}</td>
+    <td>
+      <button class="btn btn-sm btn-outline" onclick="editOtherExpense('${item.id}')">แก้</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteOtherExpense('${item.id}')">ลบ</button>
+    </td>
+  </tr>`).join('');
 }
 
 // ===== EXPORT / IMPORT =====
