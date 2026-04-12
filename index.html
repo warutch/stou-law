@@ -337,7 +337,7 @@ tr:hover { background:var(--primary-soft); }
               <th>รหัสวิชา</th>
               <th>ชื่อวิชา</th>
               <th>โครงการ</th>
-              <th>ค่าลงทะเบียน</th>
+              <th>ค่าชุดวิชา</th>
               <th>วันสอบ</th>
               <th>ผลสอบ</th>
               <th>จัดการ</th>
@@ -837,7 +837,7 @@ function renderDashboard() {
   regs.forEach(r => {
     if (r.grade === 'pending' && !passedCodes.has(r.courseCode)) studyingCodes.add(r.courseCode);
   });
-  const totalFee = regs.reduce((s, r) => s + (Number(r.fee) || 0), 0);
+  const { total: totalFee } = calcTotalExpenses(regs);
   const totalRequired = 23;
   const pct = Math.round((passedCodes.size / totalRequired) * 100);
 
@@ -1389,7 +1389,7 @@ function renderRegistrations() {
     <td style="font-weight:600">${r.courseCode}</td>
     <td>${r.courseName}</td>
     <td>${r.program === 'certificate' ? '<span class="badge badge-cert">สัมฤทธิบัตร</span>' : '<span class="badge badge-normal">ปกติ</span>'}</td>
-    <td style="text-align:right;cursor:help" title="${(r.feeItems||[]).map(f=>f.label+': '+f.amount.toLocaleString()).join('\n')||'ไม่มีรายละเอียด'}">${(r.fee || 0).toLocaleString()}</td>
+    <td style="text-align:right;cursor:help" title="ค่าชุดวิชา: ${(r.courseFee||0).toLocaleString()}${r.feeItems?'\nค่าธรรมเนียมกลุ่ม: '+(r.fee||0).toLocaleString():''}">${(r.courseFee||0).toLocaleString()}</td>
     <td>${r.examDate || '-'}</td>
     <td>${gradeBadge(r.grade)}</td>
     <td>
@@ -1468,12 +1468,12 @@ function showHistory(code) {
     document.getElementById('historyContent').innerHTML = '<p style="color:var(--text-light)">ยังไม่มีประวัติการลงทะเบียน</p>';
   } else {
     document.getElementById('historyContent').innerHTML = `<table>
-      <thead><tr><th>ครั้งที่</th><th>ปี/ภาค</th><th>โครงการ</th><th>ค่าลงทะเบียน</th><th>ผลสอบ</th></tr></thead>
+      <thead><tr><th>ครั้งที่</th><th>ปี/ภาค</th><th>โครงการ</th><th>ค่าชุดวิชา</th><th>ผลสอบ</th></tr></thead>
       <tbody>${regs.map((r, i) => `<tr>
         <td>${i + 1}</td>
         <td>${r.academicYear}/${r.semester}</td>
         <td>${r.program === 'certificate' ? 'สัมฤทธิบัตร' : 'ปกติ'}</td>
-        <td style="text-align:right">${(r.fee || 0).toLocaleString()}</td>
+        <td style="text-align:right">${(r.courseFee || 0).toLocaleString()}</td>
         <td>${gradeBadge(r.grade)}</td>
       </tr>`).join('')}</tbody>
     </table>`;
@@ -1486,59 +1486,86 @@ function closeModal(id) {
 }
 
 // ===== EXPENSES =====
+// Calculate total expenses correctly (avoid double-counting group fees)
+function calcTotalExpenses(regs) {
+  // 1. ค่าชุดวิชา (courseFee) — นับทุก record
+  const totalCourseFee = regs.reduce((s, r) => s + (Number(r.courseFee) || 0), 0);
+  // 2. ค่าธรรมเนียมอื่น (feeItems/fee) — นับเฉพาะ 1 ครั้งต่อ group
+  const groupSeen = new Set();
+  let totalOtherFee = 0;
+  regs.forEach(r => {
+    const gid = r.regGroupId || r.id;
+    if (!groupSeen.has(gid)) {
+      groupSeen.add(gid);
+      totalOtherFee += Number(r.fee) || 0;
+    }
+  });
+  return { totalCourseFee, totalOtherFee, total: totalCourseFee + totalOtherFee };
+}
+
 function renderExpenses() {
   const data = getData();
   const regs = data.registrations;
-  const totalFee = regs.reduce((s, r) => s + (Number(r.fee) || 0), 0);
+  const { totalCourseFee, totalOtherFee, total } = calcTotalExpenses(regs);
 
   const passedCodes = new Set();
   regs.forEach(r => {
     if (r.grade === 'H' || r.grade === 'S' || r.grade === 'S*') passedCodes.add(r.courseCode);
   });
   const remaining = 23 - passedCodes.size;
-  const estimatedRemaining = remaining * 1000; // estimate 1000/course
+  const estimatedRemaining = remaining * 1000;
 
   document.getElementById('expenseStats').innerHTML = `
-    <div class="stat-card orange"><div class="label">จ่ายไปแล้ว</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div>
+    <div class="stat-card orange"><div class="label">จ่ายไปแล้ว</div><div class="value">${total.toLocaleString()}</div><div class="sub">บาท</div></div>
     <div class="stat-card blue"><div class="label">ประมาณการที่เหลือ</div><div class="value">${estimatedRemaining.toLocaleString()}</div><div class="sub">บาท (${remaining} วิชา x 1,000)</div></div>
-    <div class="stat-card"><div class="label">รวมประมาณการทั้งหมด</div><div class="value">${(totalFee + estimatedRemaining).toLocaleString()}</div><div class="sub">บาท</div></div>
+    <div class="stat-card"><div class="label">รวมประมาณการทั้งหมด</div><div class="value">${(total + estimatedRemaining).toLocaleString()}</div><div class="sub">บาท</div></div>
   `;
 
   // Fee breakdown
-  const regCount = regs.length;
   const tbody = document.getElementById('expenseTableBody');
-  const rows = [
-    { label: 'ค่าลงทะเบียนจากบันทึก', count: `${regCount} รายการ`, unit: '-', total: totalFee },
-  ];
-  tbody.innerHTML = rows.map(r => `<tr>
-    <td>${r.label}</td>
-    <td style="text-align:center">${r.count}</td>
-    <td style="text-align:right">${r.unit}</td>
-    <td style="text-align:right;font-weight:600">${r.total.toLocaleString()}</td>
-  </tr>`).join('');
-  tbody.innerHTML += `<tr style="font-weight:700;background:#f8f9fa">
+  tbody.innerHTML = `<tr>
+    <td>ค่าชุดวิชา</td>
+    <td style="text-align:center">${regs.length} วิชา</td>
+    <td style="text-align:right">-</td>
+    <td style="text-align:right;font-weight:600">${totalCourseFee.toLocaleString()}</td>
+  </tr><tr>
+    <td>ค่าธรรมเนียมอื่น ๆ</td>
+    <td style="text-align:center">-</td>
+    <td style="text-align:right">-</td>
+    <td style="text-align:right;font-weight:600">${totalOtherFee.toLocaleString()}</td>
+  </tr><tr style="font-weight:700;background:var(--primary-soft)">
     <td colspan="3">รวมจ่ายจริง</td>
-    <td style="text-align:right">${totalFee.toLocaleString()} บาท</td>
+    <td style="text-align:right">${total.toLocaleString()} บาท</td>
   </tr>`;
 
-  // By semester
+  // By semester — correct calculation
   const bySem = {};
+  const groupSeenSem = new Set();
   regs.forEach(r => {
     const key = `${r.academicYear}/${r.semester}`;
-    if (!bySem[key]) bySem[key] = { count: 0, fee: 0 };
+    if (!bySem[key]) bySem[key] = { count: 0, courseFee: 0, otherFee: 0 };
     bySem[key].count++;
-    bySem[key].fee += Number(r.fee) || 0;
+    bySem[key].courseFee += Number(r.courseFee) || 0;
+    const gid = r.regGroupId || r.id;
+    if (!groupSeenSem.has(gid)) {
+      groupSeenSem.add(gid);
+      bySem[key].otherFee += Number(r.fee) || 0;
+    }
   });
   const semTbody = document.getElementById('expenseBySemester');
   const semKeys = Object.keys(bySem).sort().reverse();
   if (semKeys.length === 0) {
     semTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีข้อมูล</td></tr>';
   } else {
-    semTbody.innerHTML = semKeys.map(k => `<tr>
-      <td>ปี ${k.split('/')[0]} ภาค ${k.split('/')[1]}</td>
-      <td style="text-align:center">${bySem[k].count}</td>
-      <td style="text-align:right;font-weight:600">${bySem[k].fee.toLocaleString()}</td>
-    </tr>`).join('');
+    semTbody.innerHTML = semKeys.map(k => {
+      const s = bySem[k];
+      const semTotal = s.courseFee + s.otherFee;
+      return `<tr>
+        <td>ปี ${k.split('/')[0]} ภาค ${k.split('/')[1]}</td>
+        <td style="text-align:center">${s.count} วิชา</td>
+        <td style="text-align:right;font-weight:600">${semTotal.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
   }
 }
 
