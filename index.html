@@ -266,15 +266,15 @@ tr:hover { background:var(--primary-soft); }
   <div id="tab-registration" class="tab-content">
     <div class="card">
       <h2>ลงทะเบียนเรียน</h2>
-      <form id="regForm" onsubmit="saveRegistration(event)">
+      <form id="regForm" onsubmit="event.preventDefault(); saveRegistration()">
         <div class="form-grid">
           <div class="form-group">
             <label>ปีการศึกษา *</label>
-            <input type="text" id="regYear" placeholder="เช่น 2568" required>
+            <input type="text" id="regYear" placeholder="เช่น 2568">
           </div>
           <div class="form-group">
             <label>ภาคการศึกษา *</label>
-            <select id="regSemester" required>
+            <select id="regSemester">
               <option value="">เลือก</option>
               <option value="1">ภาคต้น (1)</option>
               <option value="2">ภาคปลาย (2)</option>
@@ -295,7 +295,7 @@ tr:hover { background:var(--primary-soft); }
           </div>
           <div class="form-group">
             <label>โครงการ *</label>
-            <select id="regProgram" required>
+            <select id="regProgram">
               <option value="normal">ลงปกติ</option>
               <option value="certificate">สัมฤทธิบัตร</option>
             </select>
@@ -316,7 +316,7 @@ tr:hover { background:var(--primary-soft); }
           </div>
         </div>
         <div class="btn-row">
-          <button type="submit" class="btn btn-primary" id="regSubmitBtn">บันทึกการลงทะเบียน</button>
+          <button type="button" class="btn btn-primary" id="regSubmitBtn" onclick="saveRegistration()">บันทึกการลงทะเบียน</button>
           <button type="button" class="btn btn-outline" onclick="resetRegForm()">ล้างฟอร์ม</button>
         </div>
       </form>
@@ -1282,8 +1282,11 @@ function setFeeItems(items) {
   }
 }
 
-function saveRegistration(e) {
-  e.preventDefault();
+function saveRegistration() {
+  const year = document.getElementById('regYear').value.trim();
+  const sem = document.getElementById('regSemester').value;
+  if (!year) { alert('กรุณากรอกปีการศึกษา'); document.getElementById('regYear').focus(); return; }
+  if (!sem) { alert('กรุณาเลือกภาคการศึกษา'); document.getElementById('regSemester').focus(); return; }
   const data = getData();
   const courses = getCourseRows();
   if (courses.length === 0) { alert('กรุณาเพิ่มชุดวิชาอย่างน้อย 1 วิชา'); return; }
