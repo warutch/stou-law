@@ -161,6 +161,8 @@ tr:hover { background:var(--primary-soft); }
 .course-row label { font-size:.68rem; color:var(--text-light); margin-bottom:3px; display:block; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
 .course-row .cr-del { background:none; border:none; color:var(--gray); cursor:pointer; font-size:1.2rem; padding:6px 10px; align-self:start; justify-self:end; border-radius:50%; transition:var(--transition); position:absolute; top:8px; right:8px; }
 .course-row .cr-del:hover { background:var(--danger-soft); color:var(--danger); }
+.course-row .cr-transfer label { font-size:.68rem; color:var(--text-light); margin-bottom:3px; display:block; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+.course-row .cr-transfer input, .course-row .cr-transfer select { padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:.85rem; background:#fff; width:100%; }
 @media (max-width:600px) { .course-row .cr-top > div, .course-row .cr-bottom > div { width:100% !important; flex:1 1 100% !important; } }
 
 /* Fee Rows */
@@ -338,7 +340,7 @@ tr:hover { background:var(--primary-soft); }
           </div>
           <div class="form-group">
             <label>โครงการ *</label>
-            <select id="regProgram">
+            <select id="regProgram" onchange="updateTransferVisibility()">
               <option value="normal">ลงปกติ</option>
               <option value="certificate">สัมฤทธิบัตร</option>
             </select>
@@ -1335,8 +1337,16 @@ function addCourseRow(data) {
       <div><label>ถึง</label><input type="text" class="cr-time-end" value="${timeEnd}" readonly placeholder="--:--" onclick="openClockPicker(this)" style="cursor:pointer;text-align:center"></div>
       <div><label>ผลสอบ</label><select class="cr-grade"><option value="pending">รอผล</option><option value="H">H</option><option value="S">S</option><option value="S*">S*</option><option value="U">U</option></select></div>
       <button type="button" class="cr-del" onclick="this.closest('.course-row').remove()">✕</button>
+    </div>
+    <div class="cr-transfer" style="display:none;grid-column:1/-1;display:none;">
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--border)">
+        <div><label>สถานะโอน</label><select class="cr-transfer-status"><option value="pending">รอโอน</option><option value="transferred">โอนแล้ว</option></select></div>
+        <div><label>ค่าโอนชุดวิชา</label><input type="number" class="cr-transfer-fee" placeholder="บาท" min="0" value="${data?.transferFee||''}"></div>
+        <div><label>วันที่โอน</label><input type="date" class="cr-transfer-date" value="${data?.transferDate||''}"></div>
+      </div>
     </div>`;
   if (data?.grade) row.querySelector('.cr-grade').value = data.grade;
+  if (data?.transferStatus) row.querySelector('.cr-transfer-status').value = data.transferStatus;
   container.appendChild(row);
   if (data?.courseCode && ALL_COURSES[data.courseCode]) {
     const nameEl = row.querySelector('.cr-name');
@@ -1344,7 +1354,15 @@ function addCourseRow(data) {
     nameEl.readOnly = true;
     nameEl.style.background = '#f8f9fa';
   }
+  updateTransferVisibility();
 }
+function updateTransferVisibility() {
+  const isCert = document.getElementById('regProgram').value === 'certificate';
+  document.querySelectorAll('#courseRows .cr-transfer').forEach(el => {
+    el.style.display = isCert ? 'block' : 'none';
+  });
+}
+
 function onCrCodeInput(el) {
   const raw = el.value.trim();
   const code = raw.split('—')[0].split(' ')[0].trim();
@@ -1375,6 +1393,9 @@ function getCourseRows() {
       examDate: r.querySelector('.cr-exam-date').value,
       examTime: (ts && te) ? `${ts}-${te}` : (ts || te || ''),
       grade: r.querySelector('.cr-grade').value,
+      transferStatus: r.querySelector('.cr-transfer-status').value,
+      transferFee: Number(r.querySelector('.cr-transfer-fee').value) || 0,
+      transferDate: r.querySelector('.cr-transfer-date').value,
     };
   }).filter(c => c.courseCode);
 }
@@ -1462,6 +1483,9 @@ function saveRegistration() {
       examDate: c.examDate,
       examTime: c.examTime,
       grade: c.grade,
+      transferStatus: c.transferStatus || '',
+      transferFee: c.transferFee || 0,
+      transferDate: c.transferDate || '',
       createdAt: new Date().toISOString(),
     });
   });
@@ -1531,7 +1555,7 @@ function renderRegistrations() {
     <td>${r.program === 'certificate' ? '<span class="badge badge-cert">สัมฤทธิบัตร</span>' : '<span class="badge badge-normal">ปกติ</span>'}</td>
     <td style="text-align:right;cursor:help" title="ค่าชุดวิชา: ${(r.courseFee||0).toLocaleString()}${r.feeItems?'\nค่าธรรมเนียมกลุ่ม: '+(r.fee||0).toLocaleString():''}">${(r.courseFee||0).toLocaleString()}</td>
     <td>${r.examDate || '-'}</td>
-    <td>${gradeBadge(r.grade)}</td>
+    <td>${gradeBadge(r.grade)}${r.program==='certificate' && (r.grade==='H'||r.grade==='S'||r.grade==='S*') ? (r.transferStatus==='transferred' ? ' <span class="badge badge-passed" style="font-size:.65rem">โอนแล้ว</span>' : ' <span class="badge badge-pending" style="font-size:.65rem">รอโอน</span>') : ''}</td>
     <td>
       <button class="btn btn-sm btn-primary" onclick="openGradeModal('${r.id}')" title="บันทึกผล">ผล</button>
       <button class="btn btn-sm btn-outline" onclick="editRegistration('${r.id}')" title="แก้ไข">แก้</button>
@@ -1568,6 +1592,9 @@ function editRegistration(id) {
     examDate: c.examDate,
     examTime: c.examTime,
     grade: c.grade,
+    transferStatus: c.transferStatus,
+    transferFee: c.transferFee,
+    transferDate: c.transferDate,
   })));
   document.getElementById('regSubmitBtn').textContent = 'อัปเดตการลงทะเบียน';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1629,9 +1656,8 @@ function closeModal(id) {
 // ===== EXPENSES =====
 // Calculate total expenses correctly (avoid double-counting group fees)
 function calcTotalExpenses(regs) {
-  // 1. ค่าชุดวิชา (courseFee) — นับทุก record
   const totalCourseFee = regs.reduce((s, r) => s + (Number(r.courseFee) || 0), 0);
-  // 2. ค่าธรรมเนียมอื่น (feeItems/fee) — นับเฉพาะ 1 ครั้งต่อ group
+  const totalTransferFee = regs.reduce((s, r) => s + (Number(r.transferFee) || 0), 0);
   const groupSeen = new Set();
   let totalOtherFee = 0;
   regs.forEach(r => {
@@ -1641,13 +1667,13 @@ function calcTotalExpenses(regs) {
       totalOtherFee += Number(r.fee) || 0;
     }
   });
-  return { totalCourseFee, totalOtherFee, total: totalCourseFee + totalOtherFee };
+  return { totalCourseFee, totalTransferFee, totalOtherFee, total: totalCourseFee + totalTransferFee + totalOtherFee };
 }
 
 function renderExpenses() {
   const data = getData();
   const regs = data.registrations;
-  const { totalCourseFee, totalOtherFee, total } = calcTotalExpenses(regs);
+  const { totalCourseFee, totalTransferFee, totalOtherFee, total } = calcTotalExpenses(regs);
 
   const passedCodes = new Set();
   regs.forEach(r => {
@@ -1664,11 +1690,17 @@ function renderExpenses() {
 
   // Fee breakdown
   const tbody = document.getElementById('expenseTableBody');
+  const transferCount = regs.filter(r => r.transferFee > 0).length;
   tbody.innerHTML = `<tr>
     <td>ค่าชุดวิชา</td>
     <td style="text-align:center">${regs.length} วิชา</td>
     <td style="text-align:right">-</td>
     <td style="text-align:right;font-weight:600">${totalCourseFee.toLocaleString()}</td>
+  </tr><tr>
+    <td>ค่าโอนชุดวิชา (สัมฤทธิบัตร)</td>
+    <td style="text-align:center">${transferCount} วิชา</td>
+    <td style="text-align:right">-</td>
+    <td style="text-align:right;font-weight:600">${totalTransferFee.toLocaleString()}</td>
   </tr><tr>
     <td>ค่าธรรมเนียมอื่น ๆ</td>
     <td style="text-align:center">-</td>
