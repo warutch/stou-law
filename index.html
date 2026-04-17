@@ -258,14 +258,13 @@ tr:hover { background:var(--primary-soft); }
 
 /* Responsive — Mobile */
 @media (max-width: 600px) {
-  .hide-sm { display: none; }
-
   /* Compact 2-row nav: [brand ··· actions] / [tabs] */
   .nav { padding: 0 8px; flex-wrap: wrap; gap: 0; align-items: center; }
   .nav-brand { order: 1; width: auto; flex: 1 1 auto; border-right: none; border-bottom: none; padding: 10px 2px; margin-right: 0; font-size: .95rem; text-align: left; white-space: nowrap; }
   .nav-right { order: 2; width: auto; flex: 0 0 auto; padding: 6px 0; gap: 4px; margin-left: auto; flex-wrap: nowrap; }
   .nav-right button { padding: 5px 9px; font-size: .7rem; }
-  .nav-btn { order: 3; flex: 1 1 25%; padding: 9px 2px; font-size: .76rem; text-align: center; white-space: nowrap; border-radius: 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .nav::after { content: ''; order: 3; flex-basis: 100%; height: 0; width: 100%; }
+  .nav-btn { order: 4; flex: 1 0 25%; padding: 9px 2px; font-size: .76rem; text-align: center; white-space: nowrap; border-radius: 0; border-top: 1px solid rgba(255,255,255,.12); }
 
   .container { padding: 12px 10px; }
   .card { padding: 14px; margin-bottom: 14px; border-radius: 10px; }
@@ -359,7 +358,6 @@ tr:hover { background:var(--primary-soft); }
     <button onclick="exportData()" title="Export ข้อมูล">Export</button>
     <button onclick="document.getElementById('importFile').click()" title="Import ข้อมูล">Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-    <button onclick="openChangePassword()" title="เปลี่ยนรหัสผ่าน"><span class="hide-sm">เปลี่ยน</span>รหัสผ่าน</button>
     <button onclick="doLogout()" title="ออกจากระบบ" style="background:rgba(231,76,60,.6)">Logout</button>
   </div>
 </nav>
@@ -680,30 +678,6 @@ tr:hover { background:var(--primary-soft); }
   </div>
 </div>
 
-<!-- Change Password Modal -->
-<div class="modal-overlay" id="changePassModal">
-  <div class="modal" style="max-width:420px">
-    <h3>เปลี่ยนรหัสผ่าน</h3>
-    <div class="form-row">
-      <label>รหัสผ่านปัจจุบัน</label>
-      <input type="password" id="cpOld" placeholder="รหัสผ่านเดิม">
-    </div>
-    <div class="form-row">
-      <label>รหัสผ่านใหม่</label>
-      <input type="password" id="cpNew" placeholder="รหัสผ่านใหม่">
-    </div>
-    <div class="form-row">
-      <label>ยืนยันรหัสผ่านใหม่</label>
-      <input type="password" id="cpNew2" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
-    </div>
-    <div id="cpError" style="color:var(--danger);font-size:.85rem;margin:4px 0;min-height:1.2em"></div>
-    <div class="btn-row" style="justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('changePassModal')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="doChangePassword()">บันทึก</button>
-    </div>
-  </div>
-</div>
-
 <!-- History Modal -->
 <div class="modal-overlay" id="historyModal">
   <div class="modal">
@@ -785,39 +759,6 @@ async function doLogin() {
   } catch(e) {
     document.getElementById('lockError').textContent = 'เกิดข้อผิดพลาด: ' + e.message;
     document.getElementById('lockSub').textContent = '';
-  }
-}
-
-function openChangePassword() {
-  document.getElementById('cpOld').value = '';
-  document.getElementById('cpNew').value = '';
-  document.getElementById('cpNew2').value = '';
-  document.getElementById('cpError').textContent = '';
-  document.getElementById('changePassModal').classList.add('show');
-}
-
-async function doChangePassword() {
-  const oldPass = document.getElementById('cpOld').value.trim();
-  const newPass = document.getElementById('cpNew').value.trim();
-  const newPass2 = document.getElementById('cpNew2').value.trim();
-  const errEl = document.getElementById('cpError');
-  errEl.textContent = '';
-  if (!oldPass || !newPass || !newPass2) { errEl.textContent = 'กรุณากรอกข้อมูลให้ครบ'; return; }
-  if (newPass.length < 4) { errEl.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร'; return; }
-  if (newPass !== newPass2) { errEl.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน'; return; }
-  if (oldPass === newPass) { errEl.textContent = 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม'; return; }
-  try {
-    const oldHash = await hashPass(oldPass);
-    const snap = await db.ref('auth/passHash').once('value');
-    const storedHash = snap.val();
-    if (storedHash && storedHash !== oldHash) { errEl.textContent = 'รหัสผ่านปัจจุบันไม่ถูกต้อง'; return; }
-    const newHash = await hashPass(newPass);
-    await db.ref('auth/passHash').set(newHash);
-    localStorage.setItem('stou_session', newHash);
-    closeModal('changePassModal');
-    alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
-  } catch (e) {
-    errEl.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
   }
 }
 
