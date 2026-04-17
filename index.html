@@ -245,6 +245,30 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
+/* Expense overview with donut chart */
+.expense-overview { display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:center; padding:16px 0; margin-bottom:16px; border-bottom:1px solid var(--border); }
+@media (max-width:640px) { .expense-overview { grid-template-columns:1fr; gap:16px; justify-items:center; } }
+.donut-pie { width:160px; height:160px; border-radius:50%; position:relative; flex-shrink:0; transition:transform .4s ease; }
+.donut-pie::after { content:''; position:absolute; inset:22px; background:#fff; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.04); }
+.donut-pie .donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; text-align:center; pointer-events:none; }
+.donut-pie .donut-total { font-size:1.35rem; font-weight:800; color:var(--primary); line-height:1; }
+.donut-pie .donut-label { font-size:.68rem; color:var(--text-light); margin-top:4px; letter-spacing:.3px; text-transform:uppercase; font-weight:500; }
+.donut-legend { display:flex; flex-direction:column; gap:10px; min-width:0; width:100%; }
+.donut-legend .dl-item { display:grid; grid-template-columns:12px 1fr auto auto; gap:10px; align-items:center; font-size:.88rem; }
+.donut-legend .dl-dot { width:12px; height:12px; border-radius:3px; }
+.donut-legend .dl-label { color:var(--text); }
+.donut-legend .dl-pct { color:var(--text-light); font-size:.78rem; font-variant-numeric:tabular-nums; }
+.donut-legend .dl-val { font-weight:700; font-variant-numeric:tabular-nums; min-width:70px; text-align:right; }
+
+/* Other expenses table polish */
+#otherExpenseTable tr { transition:var(--transition); }
+.oe-cat-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:.72rem; font-weight:600; }
+.oe-cat-badge.admission { background:#e3f2fd; color:#1565c0; }
+.oe-cat-badge.maintenance { background:#fff3e0; color:#e65100; }
+.oe-cat-badge.graduation { background:#e8f5e9; color:#2e7d32; }
+.oe-cat-badge.record_change { background:#f3e5f5; color:#6a1b9a; }
+.oe-cat-badge.other { background:#eceff1; color:#455a64; }
+
 /* Course detail modal */
 .cd-header { padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:14px; }
 .cd-header .cd-code { display:inline-block; background:var(--primary); color:#fff; padding:4px 12px; border-radius:6px; font-weight:700; font-size:.78rem; margin-bottom:6px; letter-spacing:.3px; }
@@ -629,6 +653,7 @@ tr:hover { background:var(--primary-soft); }
     <div class="stats" id="expenseStats"></div>
     <div class="card">
       <h2>รายละเอียดค่าใช้จ่าย</h2>
+      <div id="expenseOverview"></div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -2320,10 +2345,45 @@ function renderExpenses() {
   const estimatedRemaining = remaining * 1000;
 
   document.getElementById('expenseStats').innerHTML = `
-    <div class="stat-card orange"><div class="label">จ่ายไปแล้ว</div><div class="value">${total.toLocaleString()}</div><div class="sub">บาท</div></div>
-    <div class="stat-card blue"><div class="label">ประมาณการที่เหลือ</div><div class="value">${estimatedRemaining.toLocaleString()}</div><div class="sub">บาท (${remaining} วิชา x 1,000)</div></div>
-    <div class="stat-card"><div class="label">รวมประมาณการทั้งหมด</div><div class="value">${(total + estimatedRemaining).toLocaleString()}</div><div class="sub">บาท</div></div>
+    <div class="stat-card orange"><div class="stat-icon">💸</div><div class="stat-body"><div class="label">จ่ายไปแล้ว</div><div class="value">${total.toLocaleString()}</div><div class="sub">บาท</div></div></div>
+    <div class="stat-card blue"><div class="stat-icon">📅</div><div class="stat-body"><div class="label">ประมาณการที่เหลือ</div><div class="value">${estimatedRemaining.toLocaleString()}</div><div class="sub">บาท (${remaining} วิชา × 1,000)</div></div></div>
+    <div class="stat-card green"><div class="stat-icon">💎</div><div class="stat-body"><div class="label">รวมประมาณการทั้งหมด</div><div class="value">${(total + estimatedRemaining).toLocaleString()}</div><div class="sub">บาท</div></div></div>
   `;
+
+  // Overview donut chart
+  const overviewEl = document.getElementById('expenseOverview');
+  if (total === 0) {
+    overviewEl.innerHTML = '';
+  } else {
+    const slices = [
+      { label:'ค่าชุดวิชา', val:totalCourseFee, color:'#1a73e8' },
+      { label:'ค่าโอนวิชา', val:totalTransferFee, color:'#f9ab00' },
+      { label:'ค่าธรรมเนียม', val:totalOtherFee, color:'#9aa0a6' },
+      { label:'ค่าใช้จ่ายอื่น', val:totalOtherExpenses, color:'#1e8e3e' },
+    ].filter(s => s.val > 0);
+    let cum = 0;
+    const stops = slices.map(s => {
+      const start = cum / total * 100;
+      cum += s.val;
+      const end = cum / total * 100;
+      return `${s.color} ${start}% ${end}%`;
+    }).join(', ');
+    const legend = slices.map(s => `<div class="dl-item">
+      <span class="dl-dot" style="background:${s.color}"></span>
+      <span class="dl-label">${s.label}</span>
+      <span class="dl-pct">${Math.round(s.val/total*100)}%</span>
+      <span class="dl-val">${s.val.toLocaleString()}</span>
+    </div>`).join('');
+    overviewEl.innerHTML = `<div class="expense-overview">
+      <div class="donut-pie" style="background:conic-gradient(${stops})">
+        <div class="donut-center">
+          <div class="donut-total">${total.toLocaleString()}</div>
+          <div class="donut-label">บาท จ่ายจริง</div>
+        </div>
+      </div>
+      <div class="donut-legend">${legend}</div>
+    </div>`;
+  }
 
   // Fee breakdown — expandable rows
   const tbody = document.getElementById('expenseTableBody');
@@ -2582,8 +2642,9 @@ function renderOtherExpenseTable() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:16px">ยังไม่มีรายการ</td></tr>';
     return;
   }
+  const totalAmt = items.reduce((s,x) => s + (Number(x.amount)||0), 0);
   tbody.innerHTML = items.map(item => `<tr>
-    <td><span class="badge badge-normal">${item.label || OE_CATEGORIES[item.category] || item.category}</span></td>
+    <td><span class="oe-cat-badge ${item.category || 'other'}">${item.label || OE_CATEGORIES[item.category] || item.category}</span></td>
     <td>${item.detail || '-'}</td>
     <td style="text-align:right;font-weight:600">${(item.amount || 0).toLocaleString()}</td>
     <td>${item.date || '-'}</td>
@@ -2591,7 +2652,11 @@ function renderOtherExpenseTable() {
       <button class="btn btn-sm btn-outline" onclick="editOtherExpense('${item.id}')">แก้</button>
       <button class="btn btn-sm btn-danger" onclick="deleteOtherExpense('${item.id}')">ลบ</button>
     </td>
-  </tr>`).join('');
+  </tr>`).join('') + `<tr style="font-weight:700;background:var(--primary-soft)">
+    <td colspan="2">รวมทั้งหมด</td>
+    <td style="text-align:right;color:var(--primary)">${totalAmt.toLocaleString()}</td>
+    <td colspan="2"></td>
+  </tr>`;
 }
 
 // ===== EXPORT / IMPORT =====
