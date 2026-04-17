@@ -272,7 +272,7 @@ tr:hover { background:var(--primary-soft); }
 /* Registration stats strip */
 .reg-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:16px; }
 .reg-stat-card { background:var(--card-bg); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.04); display:flex; align-items:center; gap:12px; }
-.reg-stat-card .rsc-icon { width:40px; height:40px; border-radius:10px; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+.reg-stat-card .rsc-icon { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; background:transparent; }
 .reg-stat-card .rsc-body { min-width:0; }
 .reg-stat-card .rsc-value { font-size:1.2rem; font-weight:800; line-height:1.1; color:var(--primary); }
 .reg-stat-card .rsc-label { font-size:.72rem; color:var(--text-light); margin-top:2px; font-weight:500; text-transform:uppercase; letter-spacing:.3px; }
@@ -346,11 +346,7 @@ tr:hover { background:var(--primary-soft); }
 /* Stat card icons */
 .stat-card { display:flex; align-items:center; gap:14px; text-align:left; padding:16px 18px; }
 .stat-card::before { left:0; right:auto; top:0; bottom:0; width:3px; height:auto; }
-.stat-card .stat-icon { font-size:1.6rem; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:12px; background:var(--primary-soft); flex-shrink:0; }
-.stat-card.green .stat-icon { background:var(--success-soft); }
-.stat-card.blue .stat-icon { background:var(--primary-soft); }
-.stat-card.orange .stat-icon { background:var(--warning-soft); }
-.stat-card.red .stat-icon { background:var(--danger-soft); }
+.stat-card .stat-icon { font-size:1.8rem; width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:transparent; }
 .stat-card .stat-body { flex:1; min-width:0; }
 .stat-card .stat-body .label { text-align:left; }
 .stat-card .stat-body .value { font-size:1.7rem; text-align:left; line-height:1.1; }
@@ -2156,9 +2152,9 @@ function renderRegistrations() {
     const totalCourseFee = data.registrations.reduce((s, r) => s + (Number(r.courseFee) || 0), 0);
     statsEl.innerHTML = `
       <div class="reg-stat-card"><div class="rsc-icon">📝</div><div class="rsc-body"><div class="rsc-value">${data.registrations.length}</div><div class="rsc-label">รายการลงทะเบียน</div></div></div>
-      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--primary-soft)">📅</div><div class="rsc-body"><div class="rsc-value">${allSemesters.size}</div><div class="rsc-label">ภาคการศึกษา</div></div></div>
-      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--success-soft)">✅</div><div class="rsc-body"><div class="rsc-value" style="color:var(--success)">${passedCount}</div><div class="rsc-label">สอบผ่าน</div></div></div>
-      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--warning-soft)">⏳</div><div class="rsc-body"><div class="rsc-value" style="color:var(--warning)">${pendingCount}</div><div class="rsc-label">รอสอบ/รอผล</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon">📅</div><div class="rsc-body"><div class="rsc-value">${allSemesters.size}</div><div class="rsc-label">ภาคการศึกษา</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon">✅</div><div class="rsc-body"><div class="rsc-value" style="color:var(--success)">${passedCount}</div><div class="rsc-label">สอบผ่าน</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon">⏳</div><div class="rsc-body"><div class="rsc-value" style="color:var(--warning)">${pendingCount}</div><div class="rsc-label">รอสอบ/รอผล</div></div></div>
     `;
   }
 
