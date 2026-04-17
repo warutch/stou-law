@@ -228,13 +228,78 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
-/* Responsive */
+/* Dashboard grid */
+.dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.dash-grid > .card.full { grid-column:1/-1; }
+
+/* Responsive — Tablet */
+@media (max-width: 900px) {
+  .container { padding: 18px 14px; }
+  .card { padding: 18px; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash-grid > .card.full { grid-column: auto; }
+}
+
+/* Responsive — Mobile */
 @media (max-width: 600px) {
-  .nav { flex-wrap: wrap; }
-  .nav-brand { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,.2); padding: 10px 0; }
-  .nav-btn { padding: 10px 12px; font-size: .8rem; }
-  .form-grid { grid-template-columns: 1fr; }
-  .stats { grid-template-columns: 1fr 1fr; }
+  .nav { padding: 0 10px; flex-wrap: wrap; gap: 0; }
+  .nav-brand { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,.15); padding: 10px 4px; margin-right: 0; font-size: 1rem; text-align:center; }
+  .nav-btn { padding: 10px 10px; font-size: .78rem; flex: 1 1 auto; text-align:center; }
+  .nav-right { width: 100%; justify-content: flex-end; padding: 6px 0; gap: 4px; flex-wrap: wrap; }
+  .nav-right button { padding: 6px 10px; font-size: .72rem; }
+
+  .container { padding: 12px 10px; }
+  .card { padding: 14px; margin-bottom: 14px; border-radius: 10px; }
+  .card h2 { font-size: 1rem; }
+  .card h3 { font-size: .92rem; }
+
+  .form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { padding: 14px; }
+  .stat-card .value { font-size: 1.5rem; }
+  .stat-card .label { font-size: .7rem; }
+
+  /* Tables: allow horizontal scroll */
+  .card > table, .cat-body > table, .sem-body > table, #historyContent > table { display:block; overflow-x:auto; white-space:nowrap; }
+  table { font-size: .8rem; }
+  th { padding: 10px 8px; font-size: .72rem; }
+  td { padding: 8px 6px; }
+
+  /* Modal */
+  .modal { padding: 20px; width: 94%; max-height: 90vh; border-radius: 10px; }
+  .modal h3 { font-size: 1rem; margin-bottom: 14px; }
+
+  /* Buttons */
+  .btn { padding: 9px 16px; font-size: .82rem; }
+  .btn-sm { padding: 4px 10px; font-size: .72rem; }
+  .btn-row { gap: 6px; }
+
+  /* Curriculum */
+  .cat-header { padding: 10px 12px; font-size: .82rem; flex-wrap: wrap; gap: 6px; }
+  .subgroup { padding: 6px 12px; font-size: .78rem; }
+  .edit-row { flex-wrap: wrap; }
+
+  /* Exam items */
+  .exam-item { gap: 10px; padding: 10px 0; }
+  .exam-date { padding: 8px 10px; min-width: 48px; }
+  .exam-date .day { font-size: 1.1rem; }
+  .exam-info .course { font-size: .82rem; }
+
+  /* Semester accordion */
+  .sem-header { padding: 12px 14px; flex-wrap: wrap; gap: 6px; }
+  .sem-header .sem-title { font-size: .85rem; }
+  .sem-header .sem-total { font-size: .88rem; }
+
+  /* Lock screen */
+  .lock-card { padding: 32px 24px; border-radius: 16px; }
+  .lock-card h1 { font-size: 1.4rem; }
+}
+
+/* Responsive — Small phones */
+@media (max-width: 380px) {
+  .stats { grid-template-columns: 1fr; }
+  .nav-btn { padding: 8px 6px; font-size: .72rem; }
+  .card { padding: 12px; }
 }
 </style>
 </head>
@@ -273,8 +338,8 @@ tr:hover { background:var(--primary-soft); }
   <!-- Dashboard -->
   <div id="tab-dashboard" class="tab-content active">
     <div class="stats" id="dashStats"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card" style="grid-column:1/3">
+    <div class="dash-grid">
+      <div class="card full">
         <h2>ความก้าวหน้าการเรียน</h2>
         <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
         <div style="font-size:.8rem;color:var(--text-light);margin-top:4px" id="progressText"></div>
