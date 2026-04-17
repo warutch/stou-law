@@ -245,6 +245,19 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
+/* Curriculum filters */
+.cur-filters { display:grid; grid-template-columns:1fr 180px 200px; gap:10px; margin:14px 0 10px; align-items:stretch; }
+.cur-search { position:relative; display:flex; align-items:center; }
+.cur-search-icon { position:absolute; left:12px; font-size:.9rem; pointer-events:none; opacity:.6; }
+.cur-search input { width:100%; padding:10px 36px 10px 36px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:.9rem; background:#fff; transition:var(--transition); }
+.cur-search input:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+.cur-search button { position:absolute; right:6px; background:none; border:none; color:var(--text-light); cursor:pointer; font-size:.85rem; padding:6px 8px; border-radius:50%; transition:var(--transition); }
+.cur-search button:hover { background:#f0f2f5; color:var(--danger); }
+.cur-filters select { padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:.88rem; background:#fff; cursor:pointer; transition:var(--transition); }
+.cur-filters select:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(26,115,232,.12); }
+.cur-empty { padding:24px 16px; text-align:center; color:var(--text-light); font-size:.9rem; }
+@media (max-width:700px) { .cur-filters { grid-template-columns:1fr; } }
+
 /* Dashboard hero */
 .dash-hero { background:linear-gradient(135deg, var(--primary) 0%, #1a3a5c 45%, var(--primary-light) 100%); color:#fff; border-radius:var(--radius); padding:22px 24px; margin-bottom:20px; box-shadow:var(--shadow-md); display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; position:relative; overflow:hidden; }
 .dash-hero::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%); pointer-events:none; }
@@ -482,6 +495,29 @@ tr:hover { background:var(--primary-soft); }
           <button class="btn btn-sm btn-outline" onclick="resetCurriculumToDefault()">รีเซ็ต</button>
         </div>
       </div>
+      <div class="cur-filters">
+        <div class="cur-search">
+          <span class="cur-search-icon">🔍</span>
+          <input type="text" id="curSearch" placeholder="ค้นหารหัสวิชาหรือชื่อวิชา..." oninput="renderCurriculum()" autocomplete="off">
+          <button type="button" id="curSearchClear" onclick="clearCurFilters()" title="ล้างคำค้นหา" style="display:none">✕</button>
+        </div>
+        <select id="curStatusFilter" onchange="renderCurriculum()">
+          <option value="">ทุกสถานะ</option>
+          <option value="passed">ผ่านแล้ว</option>
+          <option value="studying">กำลังเรียน</option>
+          <option value="notyet">ยังไม่ได้เรียน</option>
+          <option value="failed">ไม่ผ่าน</option>
+        </select>
+        <select id="curCategoryFilter" onchange="renderCurriculum()">
+          <option value="">ทุกหมวด</option>
+          <option value="ge_required">ศึกษาทั่วไป - บังคับ</option>
+          <option value="ge_elective">ศึกษาทั่วไป - เลือก</option>
+          <option value="core">วิชาเฉพาะ - แกน</option>
+          <option value="elective">วิชาเฉพาะ - เลือก</option>
+          <option value="free">เลือกเสรี</option>
+        </select>
+      </div>
+      <div id="curMatchInfo" style="font-size:.8rem;color:var(--text-light);margin-bottom:10px;display:none"></div>
       <div id="curriculumList"></div>
     </div>
   </div>
@@ -1388,48 +1424,122 @@ function courseRowHtml(c, catKey, idx, groupName) {
   </tr>`;
 }
 
+function clearCurFilters() {
+  document.getElementById('curSearch').value = '';
+  document.getElementById('curStatusFilter').value = '';
+  document.getElementById('curCategoryFilter').value = '';
+  renderCurriculum();
+}
+
+function matchCourseFilter(c, search, statusFilter) {
+  if (search) {
+    const q = search.toLowerCase();
+    if (!c.code.toLowerCase().includes(q) && !c.name.toLowerCase().includes(q)) return false;
+  }
+  if (statusFilter) {
+    if (getCourseStatus(c.code) !== statusFilter) return false;
+  }
+  return true;
+}
+
 function renderCurriculum() {
   const cur = getCurriculum();
-  let html = '';
-  const totalCourses = cur.ge_required.length + 3 + cur.core.length + 2 + 1; // approx
-  const allCounts = cur.ge_required.length + cur.ge_elective_lang.length + cur.ge_elective_social.length + cur.ge_elective_human.length + cur.core.length;
+  const searchEl = document.getElementById('curSearch');
+  const statusEl = document.getElementById('curStatusFilter');
+  const categoryEl = document.getElementById('curCategoryFilter');
+  const search = searchEl ? searchEl.value.trim() : '';
+  const statusFilter = statusEl ? statusEl.value : '';
+  const categoryFilter = categoryEl ? categoryEl.value : '';
+  const isFiltering = !!(search || statusFilter || categoryFilter);
+
+  // Toggle clear button
+  const clearBtn = document.getElementById('curSearchClear');
+  if (clearBtn) clearBtn.style.display = isFiltering ? 'block' : 'none';
+
+  const filt = c => matchCourseFilter(c, search, statusFilter);
+
   document.getElementById('curriculumSummary').textContent = `วิชาแกน+ศึกษาทั่วไป ${cur.ge_required.length + cur.core.length + 3} ชุดวิชา + เลือก 2 + เสรี 1 = รวมเรียน 23 ชุดวิชา = 138 หน่วยกิต`;
 
+  let html = '';
+  let matchCount = 0;
+
+  const showCat = (catKey) => !categoryFilter || catKey === categoryFilter;
+
   // GE Required
-  html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — บังคับ</span><span>${cur.ge_required.length} ชุดวิชา = ${cur.ge_required.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>`;
-  cur.ge_required.forEach((c, i) => { html += courseRowHtml(c, 'ge_required', i); });
-  html += '</table></div>';
+  if (showCat('ge_required')) {
+    const rows = [];
+    cur.ge_required.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'ge_required', i)); matchCount++; } });
+    if (rows.length > 0 || !isFiltering) {
+      html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — บังคับ</span><span>${cur.ge_required.length} ชุดวิชา = ${cur.ge_required.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
+    }
+  }
 
   // GE Elective
-  html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — เลือก (เลือก 3 ชุดวิชา กลุ่มละ 1)</span><span>3 ชุดวิชา = 18 หน่วยกิต</span></div><div class="cat-body">`;
-  [
-    { title: 'กลุ่มภาษา (เลือก 1)', key: 'ge_elective_lang', courses: cur.ge_elective_lang },
-    { title: 'กลุ่มสังคมศาสตร์ (เลือก 1)', key: 'ge_elective_social', courses: cur.ge_elective_social },
-    { title: 'กลุ่มมนุษยศาสตร์ (เลือก 1)', key: 'ge_elective_human', courses: cur.ge_elective_human },
-  ].forEach(g => {
-    html += `<div class="subgroup">${g.title}</div><table>`;
-    g.courses.forEach((c, i) => { html += courseRowHtml(c, g.key, i); });
-    html += '</table>';
-  });
-  html += '</div>';
+  if (showCat('ge_elective')) {
+    const groups = [
+      { title: 'กลุ่มภาษา (เลือก 1)', key: 'ge_elective_lang', courses: cur.ge_elective_lang },
+      { title: 'กลุ่มสังคมศาสตร์ (เลือก 1)', key: 'ge_elective_social', courses: cur.ge_elective_social },
+      { title: 'กลุ่มมนุษยศาสตร์ (เลือก 1)', key: 'ge_elective_human', courses: cur.ge_elective_human },
+    ];
+    let body = '';
+    let anyGroupHasRows = false;
+    groups.forEach(g => {
+      const rows = [];
+      g.courses.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, g.key, i)); matchCount++; } });
+      if (rows.length > 0) anyGroupHasRows = true;
+      if (rows.length > 0 || !isFiltering) {
+        body += `<div class="subgroup">${g.title}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
+      }
+    });
+    if (anyGroupHasRows || !isFiltering) {
+      html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — เลือก (เลือก 3 ชุดวิชา กลุ่มละ 1)</span><span>3 ชุดวิชา = 18 หน่วยกิต</span></div><div class="cat-body">${body}</div>`;
+    }
+  }
 
   // Core
-  html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาแกน (บังคับ)</span><span>${cur.core.length} ชุดวิชา = ${cur.core.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>`;
-  cur.core.forEach((c, i) => { html += courseRowHtml(c, 'core', i); });
-  html += '</table></div>';
+  if (showCat('core')) {
+    const rows = [];
+    cur.core.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'core', i)); matchCount++; } });
+    if (rows.length > 0 || !isFiltering) {
+      html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาแกน (บังคับ)</span><span>${cur.core.length} ชุดวิชา = ${cur.core.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
+    }
+  }
 
   // Elective Groups
-  html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาเลือก (เลือก 2 ชุดวิชาจาก 1 กลุ่ม)</span><span>2 ชุดวิชา = 12 หน่วยกิต</span></div><div class="cat-body">`;
-  Object.entries(cur.elective_groups).forEach(([gName, courses]) => {
-    html += `<div class="subgroup">กลุ่ม${gName}</div><table>`;
-    courses.forEach((c, i) => { html += courseRowHtml(c, 'elective', i, gName); });
-    html += '</table>';
-  });
-  html += '</div>';
+  if (showCat('elective')) {
+    let body = '';
+    let anyGroupHasRows = false;
+    Object.entries(cur.elective_groups).forEach(([gName, courses]) => {
+      const rows = [];
+      courses.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'elective', i, gName)); matchCount++; } });
+      if (rows.length > 0) anyGroupHasRows = true;
+      if (rows.length > 0 || !isFiltering) {
+        body += `<div class="subgroup">กลุ่ม${gName}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
+      }
+    });
+    if (anyGroupHasRows || !isFiltering) {
+      html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาเลือก (เลือก 2 ชุดวิชาจาก 1 กลุ่ม)</span><span>2 ชุดวิชา = 12 หน่วยกิต</span></div><div class="cat-body">${body}</div>`;
+    }
+  }
 
-  // Free elective
-  html += `<div class="cat-header"><span>ค. หมวดวิชาเลือกเสรี</span><span>1 ชุดวิชา = 6 หน่วยกิต</span></div>`;
-  html += `<div class="cat-body"><table><tr><td colspan="5" style="color:var(--text-light);padding:12px">เลือกจากชุดวิชาที่เปิดสอนในโครงการสัมฤทธิบัตร หรือชุดวิชาระดับปริญญาตรีของ มสธ.</td></tr></table></div>`;
+  // Free elective (no courses to filter)
+  if (showCat('free') && !isFiltering) {
+    html += `<div class="cat-header"><span>ค. หมวดวิชาเลือกเสรี</span><span>1 ชุดวิชา = 6 หน่วยกิต</span></div>`;
+    html += `<div class="cat-body"><table><tr><td colspan="5" style="color:var(--text-light);padding:12px">เลือกจากชุดวิชาที่เปิดสอนในโครงการสัมฤทธิบัตร หรือชุดวิชาระดับปริญญาตรีของ มสธ.</td></tr></table></div>`;
+  }
+
+  if (html === '' && isFiltering) {
+    html = `<div class="cur-empty" style="padding:40px 16px">🔍 ไม่พบชุดวิชาที่ตรงกับตัวกรอง ลองปรับคำค้นหาหรือ<a href="#" onclick="clearCurFilters();return false" style="color:var(--primary-light);margin-left:4px">ล้างตัวกรอง</a></div>`;
+  }
+
+  // Match count info
+  const infoEl = document.getElementById('curMatchInfo');
+  if (isFiltering && infoEl) {
+    infoEl.style.display = 'block';
+    infoEl.textContent = `พบ ${matchCount} ชุดวิชาที่ตรงกับตัวกรอง`;
+  } else if (infoEl) {
+    infoEl.style.display = 'none';
+  }
 
   document.getElementById('curriculumList').innerHTML = html;
 }
