@@ -163,7 +163,23 @@ tr:hover { background:var(--primary-soft); }
 .course-row .cr-del:hover { background:var(--danger-soft); color:var(--danger); }
 .course-row .cr-transfer label { font-size:.68rem; color:var(--text-light); margin-bottom:3px; display:block; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
 .course-row .cr-transfer input, .course-row .cr-transfer select { padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:.85rem; background:#fff; width:100%; }
-@media (max-width:600px) { .course-row .cr-top > div, .course-row .cr-bottom > div { width:100% !important; flex:1 1 100% !important; } }
+@media (max-width:600px) {
+  .course-row { padding:12px; padding-right:34px; }
+  /* cr-top: code + fee on first row, name full-width on second row */
+  .course-row .cr-top { display:grid; grid-template-columns:1fr 110px; gap:8px; }
+  .course-row .cr-top > div { width:auto !important; min-width:0 !important; flex:unset !important; max-width:none !important; }
+  .course-row .cr-top > div:nth-child(1) { grid-row:1; grid-column:1; }
+  .course-row .cr-top > div:nth-child(2) { grid-row:2; grid-column:1/-1; }
+  .course-row .cr-top > div:nth-child(3) { grid-row:1; grid-column:2; max-width:none !important; }
+  /* cr-bottom: date full-width, start/end side-by-side, grade full-width */
+  .course-row .cr-bottom { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .course-row .cr-bottom > div { width:auto !important; min-width:0 !important; flex:unset !important; }
+  .course-row .cr-bottom > div:nth-child(1) { grid-column:1/-1; }
+  .course-row .cr-bottom > div:nth-child(4) { grid-column:1/-1; }
+  /* cr-transfer: status full-width, fee+date side-by-side */
+  .course-row .cr-transfer > div { display:grid !important; grid-template-columns:1fr 1fr; gap:8px; }
+  .course-row .cr-transfer > div > div:nth-child(1) { grid-column:1/-1; }
+}
 
 /* Fee Rows */
 .fee-row { display:flex; gap:8px; align-items:center; }
@@ -278,6 +294,13 @@ tr:hover { background:var(--primary-soft); }
   .cat-header { padding: 10px 12px; font-size: .82rem; flex-wrap: wrap; gap: 6px; }
   .subgroup { padding: 6px 12px; font-size: .78rem; }
   .edit-row { flex-wrap: wrap; }
+
+  /* Fee row: keep inline but shrink */
+  .fee-row { gap: 6px; }
+  .fee-row input { padding: 8px; font-size: .82rem; }
+
+  /* Registration filter select fits full width */
+  #filterSemester { width: 100%; }
 
   /* Exam items */
   .exam-item { gap: 10px; padding: 10px 0; }
