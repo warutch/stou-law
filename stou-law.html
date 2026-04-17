@@ -245,6 +245,41 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
+/* Curriculum summary strip */
+.cur-summary { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:0 0 18px; }
+.cur-sum-card { background:linear-gradient(135deg, #fff 0%, #fafbfc 100%); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; position:relative; overflow:hidden; transition:var(--transition); }
+.cur-sum-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.cur-sum-card .csc-icon { font-size:1.1rem; margin-bottom:6px; opacity:.9; }
+.cur-sum-card .csc-label { font-size:.72rem; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+.cur-sum-card .csc-values { display:flex; align-items:baseline; gap:4px; margin-top:4px; }
+.cur-sum-card .csc-passed { font-size:1.3rem; font-weight:800; color:var(--primary); line-height:1; }
+.cur-sum-card .csc-total { font-size:.85rem; color:var(--text-light); font-weight:500; }
+.cur-sum-card .csc-bar { margin-top:8px; height:4px; background:#eef1f5; border-radius:999px; overflow:hidden; }
+.cur-sum-card .csc-fill { height:100%; border-radius:999px; background:linear-gradient(90deg, var(--primary-light), var(--success)); transition:width .6s ease; }
+
+/* Enhanced category header */
+.cat-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:nowrap; }
+.cat-header .ch-left { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+.cat-header .ch-icon { font-size:1.05rem; opacity:.95; flex-shrink:0; }
+.cat-header .ch-title { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.cat-header .ch-progress { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.22); padding:4px 12px; border-radius:999px; font-size:.78rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
+.cat-header .ch-progress.done { background:var(--success); border-color:var(--success); }
+
+/* Subgroup icon */
+.subgroup { display:flex; align-items:center; gap:8px; }
+.subgroup .sg-icon { font-size:.95rem; opacity:.8; }
+
+/* Registration stats strip */
+.reg-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:16px; }
+.reg-stat-card { background:var(--card-bg); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.04); display:flex; align-items:center; gap:12px; }
+.reg-stat-card .rsc-icon { width:40px; height:40px; border-radius:10px; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+.reg-stat-card .rsc-body { min-width:0; }
+.reg-stat-card .rsc-value { font-size:1.2rem; font-weight:800; line-height:1.1; color:var(--primary); }
+.reg-stat-card .rsc-label { font-size:.72rem; color:var(--text-light); margin-top:2px; font-weight:500; text-transform:uppercase; letter-spacing:.3px; }
+
+/* Card h2 with icon */
+.card-title-icon { display:inline-flex; align-items:center; gap:8px; }
+
 /* Expense overview with donut chart */
 .expense-overview { display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:center; padding:16px 0; margin-bottom:16px; border-bottom:1px solid var(--border); }
 @media (max-width:640px) { .expense-overview { grid-template-columns:1fr; gap:16px; justify-items:center; } }
@@ -556,6 +591,7 @@ tr:hover { background:var(--primary-soft); }
           <option value="free">เลือกเสรี</option>
         </select>
       </div>
+      <div id="curSummary"></div>
       <div id="curMatchInfo" style="font-size:.8rem;color:var(--text-light);margin-bottom:10px;display:none"></div>
       <div id="curriculumList"></div>
     </div>
@@ -563,8 +599,9 @@ tr:hover { background:var(--primary-soft); }
 
   <!-- Registration -->
   <div id="tab-registration" class="tab-content">
+    <div id="regStats" class="reg-stats"></div>
     <div class="card">
-      <h2>ลงทะเบียนเรียน</h2>
+      <h2><span class="card-title-icon">✍️ ลงทะเบียนเรียน</span></h2>
       <form id="regForm" onsubmit="event.preventDefault(); saveRegistration()">
         <div class="form-grid">
           <div class="form-group">
@@ -622,7 +659,7 @@ tr:hover { background:var(--primary-soft); }
     </div>
 
     <div class="card">
-      <h2>รายการลงทะเบียนทั้งหมด</h2>
+      <h2><span class="card-title-icon">📋 รายการลงทะเบียนทั้งหมด</span></h2>
       <div style="margin-bottom:12px">
         <select id="filterSemester" onchange="renderRegistrations()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem">
           <option value="">ทุกภาคการศึกษา</option>
@@ -1544,6 +1581,49 @@ function renderCurriculum() {
 
   document.getElementById('curriculumSummary').textContent = `วิชาแกน+ศึกษาทั่วไป ${cur.ge_required.length + cur.core.length + 3} ชุดวิชา + เลือก 2 + เสรี 1 = รวมเรียน 23 ชุดวิชา = 138 หน่วยกิต`;
 
+  // Compute per-category progress
+  const countPassed = (courses) => courses.filter(c => getCourseStatus(c.code) === 'passed').length;
+  const geReqPassed = countPassed(cur.ge_required);
+  const geElecPassed = countPassed([...cur.ge_elective_lang, ...cur.ge_elective_social, ...cur.ge_elective_human]);
+  const corePassed = countPassed(cur.core);
+  const electivePassed = countPassed(Object.values(cur.elective_groups).flat());
+
+  // Summary strip (only show when no filters active)
+  const summaryEl = document.getElementById('curSummary');
+  if (summaryEl) {
+    if (isFiltering) {
+      summaryEl.innerHTML = '';
+    } else {
+      const mkCard = (icon, label, passed, totalReq) => {
+        const pct = totalReq > 0 ? Math.min(100, (passed / totalReq) * 100) : 0;
+        return `<div class="cur-sum-card">
+          <div class="csc-icon">${icon}</div>
+          <div class="csc-label">${label}</div>
+          <div class="csc-values"><span class="csc-passed">${passed}</span><span class="csc-total">/ ${totalReq}</span></div>
+          <div class="csc-bar"><div class="csc-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      };
+      summaryEl.innerHTML = `<div class="cur-summary">
+        ${mkCard('📚', 'ศึกษาทั่วไป บังคับ', geReqPassed, cur.ge_required.length)}
+        ${mkCard('🌐', 'ศึกษาทั่วไป เลือก', Math.min(geElecPassed, 3), 3)}
+        ${mkCard('⚖️', 'วิชาแกน', corePassed, cur.core.length)}
+        ${mkCard('🎯', 'วิชาเลือก', Math.min(electivePassed, 2), 2)}
+      </div>`;
+    }
+  }
+
+  // Helper for cat-header with icon & progress
+  const catHead = (icon, title, passed, total, totalCredits) => {
+    const done = total > 0 && passed >= total;
+    return `<div class="cat-header">
+      <div class="ch-left">
+        <span class="ch-icon">${icon}</span>
+        <span class="ch-title">${title}</span>
+      </div>
+      <span class="ch-progress ${done ? 'done' : ''}">${passed}/${total} ผ่าน · ${total * 6} หน่วยกิต</span>
+    </div>`;
+  };
+
   let html = '';
   let matchCount = 0;
 
@@ -1554,16 +1634,17 @@ function renderCurriculum() {
     const rows = [];
     cur.ge_required.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'ge_required', i)); matchCount++; } });
     if (rows.length > 0 || !isFiltering) {
-      html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — บังคับ</span><span>${cur.ge_required.length} ชุดวิชา = ${cur.ge_required.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
+      html += catHead('📚', 'ก. หมวดวิชาศึกษาทั่วไป — บังคับ', geReqPassed, cur.ge_required.length);
+      html += `<div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
     }
   }
 
   // GE Elective
   if (showCat('ge_elective')) {
     const groups = [
-      { title: 'กลุ่มภาษา (เลือก 1)', key: 'ge_elective_lang', courses: cur.ge_elective_lang },
-      { title: 'กลุ่มสังคมศาสตร์ (เลือก 1)', key: 'ge_elective_social', courses: cur.ge_elective_social },
-      { title: 'กลุ่มมนุษยศาสตร์ (เลือก 1)', key: 'ge_elective_human', courses: cur.ge_elective_human },
+      { title: 'กลุ่มภาษา (เลือก 1)', key: 'ge_elective_lang', courses: cur.ge_elective_lang, icon: '💬' },
+      { title: 'กลุ่มสังคมศาสตร์ (เลือก 1)', key: 'ge_elective_social', courses: cur.ge_elective_social, icon: '🌏' },
+      { title: 'กลุ่มมนุษยศาสตร์ (เลือก 1)', key: 'ge_elective_human', courses: cur.ge_elective_human, icon: '🎨' },
     ];
     let body = '';
     let anyGroupHasRows = false;
@@ -1572,11 +1653,12 @@ function renderCurriculum() {
       g.courses.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, g.key, i)); matchCount++; } });
       if (rows.length > 0) anyGroupHasRows = true;
       if (rows.length > 0 || !isFiltering) {
-        body += `<div class="subgroup">${g.title}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
+        body += `<div class="subgroup"><span class="sg-icon">${g.icon}</span>${g.title}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
       }
     });
     if (anyGroupHasRows || !isFiltering) {
-      html += `<div class="cat-header"><span>ก. หมวดวิชาศึกษาทั่วไป — เลือก (เลือก 3 ชุดวิชา กลุ่มละ 1)</span><span>3 ชุดวิชา = 18 หน่วยกิต</span></div><div class="cat-body">${body}</div>`;
+      html += catHead('🌐', 'ก. หมวดวิชาศึกษาทั่วไป — เลือก (กลุ่มละ 1)', Math.min(geElecPassed, 3), 3);
+      html += `<div class="cat-body">${body}</div>`;
     }
   }
 
@@ -1585,7 +1667,8 @@ function renderCurriculum() {
     const rows = [];
     cur.core.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'core', i)); matchCount++; } });
     if (rows.length > 0 || !isFiltering) {
-      html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาแกน (บังคับ)</span><span>${cur.core.length} ชุดวิชา = ${cur.core.length * 6} หน่วยกิต</span></div><div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
+      html += catHead('⚖️', 'ข. หมวดวิชาเฉพาะ — วิชาแกน (บังคับ)', corePassed, cur.core.length);
+      html += `<div class="cat-body"><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบชุดวิชาที่ตรงกับการค้นหา</td></tr>' : ''}</table></div>`;
     }
   }
 
@@ -1598,17 +1681,18 @@ function renderCurriculum() {
       courses.forEach((c, i) => { if (filt(c)) { rows.push(courseRowHtml(c, 'elective', i, gName)); matchCount++; } });
       if (rows.length > 0) anyGroupHasRows = true;
       if (rows.length > 0 || !isFiltering) {
-        body += `<div class="subgroup">กลุ่ม${gName}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
+        body += `<div class="subgroup"><span class="sg-icon">📖</span>กลุ่ม${gName}</div><table>${rows.join('')}${rows.length === 0 ? '<tr><td colspan="5" class="cur-empty">ไม่พบ</td></tr>' : ''}</table>`;
       }
     });
     if (anyGroupHasRows || !isFiltering) {
-      html += `<div class="cat-header"><span>ข. หมวดวิชาเฉพาะ — วิชาเลือก (เลือก 2 ชุดวิชาจาก 1 กลุ่ม)</span><span>2 ชุดวิชา = 12 หน่วยกิต</span></div><div class="cat-body">${body}</div>`;
+      html += catHead('🎯', 'ข. หมวดวิชาเฉพาะ — วิชาเลือก (2 ชุดจาก 1 กลุ่ม)', Math.min(electivePassed, 2), 2);
+      html += `<div class="cat-body">${body}</div>`;
     }
   }
 
   // Free elective (no courses to filter)
   if (showCat('free') && !isFiltering) {
-    html += `<div class="cat-header"><span>ค. หมวดวิชาเลือกเสรี</span><span>1 ชุดวิชา = 6 หน่วยกิต</span></div>`;
+    html += catHead('✨', 'ค. หมวดวิชาเลือกเสรี', 0, 1);
     html += `<div class="cat-body"><table><tr><td colspan="5" style="color:var(--text-light);padding:12px">เลือกจากชุดวิชาที่เปิดสอนในโครงการสัมฤทธิบัตร หรือชุดวิชาระดับปริญญาตรีของ มสธ.</td></tr></table></div>`;
   }
 
@@ -2062,6 +2146,21 @@ function renderRegistrations() {
     const kb = `${b.academicYear}-${b.semester}`;
     return kb.localeCompare(ka);
   });
+
+  // Stats strip
+  const statsEl = document.getElementById('regStats');
+  if (statsEl) {
+    const allSemesters = new Set(data.registrations.map(r => `${r.academicYear}/${r.semester}`));
+    const passedCount = data.registrations.filter(r => r.grade === 'H' || r.grade === 'S' || r.grade === 'S*').length;
+    const pendingCount = data.registrations.filter(r => r.grade === 'pending').length;
+    const totalCourseFee = data.registrations.reduce((s, r) => s + (Number(r.courseFee) || 0), 0);
+    statsEl.innerHTML = `
+      <div class="reg-stat-card"><div class="rsc-icon">📝</div><div class="rsc-body"><div class="rsc-value">${data.registrations.length}</div><div class="rsc-label">รายการลงทะเบียน</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--primary-soft)">📅</div><div class="rsc-body"><div class="rsc-value">${allSemesters.size}</div><div class="rsc-label">ภาคการศึกษา</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--success-soft)">✅</div><div class="rsc-body"><div class="rsc-value" style="color:var(--success)">${passedCount}</div><div class="rsc-label">สอบผ่าน</div></div></div>
+      <div class="reg-stat-card"><div class="rsc-icon" style="background:var(--warning-soft)">⏳</div><div class="rsc-body"><div class="rsc-value" style="color:var(--warning)">${pendingCount}</div><div class="rsc-label">รอสอบ/รอผล</div></div></div>
+    `;
+  }
 
   // Build filter options
   const filterEl = document.getElementById('filterSemester');
