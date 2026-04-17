@@ -245,6 +245,63 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
+/* Dashboard hero */
+.dash-hero { background:linear-gradient(135deg, var(--primary) 0%, #1a3a5c 45%, var(--primary-light) 100%); color:#fff; border-radius:var(--radius); padding:22px 24px; margin-bottom:20px; box-shadow:var(--shadow-md); display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; position:relative; overflow:hidden; }
+.dash-hero::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%); pointer-events:none; }
+.dash-hero .hero-greet { font-size:.82rem; opacity:.8; letter-spacing:.3px; text-transform:uppercase; font-weight:500; }
+.dash-hero .hero-name { font-size:1.5rem; font-weight:800; margin-top:2px; letter-spacing:-.3px; }
+.dash-hero .hero-meta { font-size:.85rem; opacity:.85; margin-top:4px; }
+.dash-hero .hero-right { display:flex; gap:10px; flex-wrap:wrap; }
+.dash-hero .hero-pill { background:rgba(255,255,255,.15); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.2); padding:10px 16px; border-radius:var(--radius-sm); font-size:.8rem; text-align:center; min-width:96px; }
+.dash-hero .hero-pill .pill-label { opacity:.75; font-size:.7rem; letter-spacing:.3px; text-transform:uppercase; font-weight:500; }
+.dash-hero .hero-pill .pill-value { font-weight:800; font-size:1.1rem; margin-top:2px; }
+
+/* Stat card icons */
+.stat-card { display:flex; align-items:center; gap:14px; text-align:left; padding:16px 18px; }
+.stat-card::before { left:0; right:auto; top:0; bottom:0; width:3px; height:auto; }
+.stat-card .stat-icon { font-size:1.6rem; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:12px; background:var(--primary-soft); flex-shrink:0; }
+.stat-card.green .stat-icon { background:var(--success-soft); }
+.stat-card.blue .stat-icon { background:var(--primary-soft); }
+.stat-card.orange .stat-icon { background:var(--warning-soft); }
+.stat-card.red .stat-icon { background:var(--danger-soft); }
+.stat-card .stat-body { flex:1; min-width:0; }
+.stat-card .stat-body .label { text-align:left; }
+.stat-card .stat-body .value { font-size:1.7rem; text-align:left; line-height:1.1; }
+.stat-card .stat-body .sub { text-align:left; }
+
+/* Circular progress ring */
+.ring-progress { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.ring-svg { width:140px; height:140px; flex-shrink:0; }
+.ring-track { fill:none; stroke:#e8eaed; stroke-width:12; }
+.ring-fill { fill:none; stroke:url(#ringGrad); stroke-width:12; stroke-linecap:round; transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1); }
+.ring-text { font-size:1.6rem; font-weight:800; fill:var(--primary); text-anchor:middle; dominant-baseline:central; }
+.ring-subtext { font-size:.55rem; fill:var(--text-light); text-anchor:middle; dominant-baseline:central; font-weight:500; letter-spacing:.5px; }
+.ring-info { flex:1; min-width:180px; }
+.ring-info .ri-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem; }
+.ring-info .ri-item:last-child { border-bottom:none; }
+.ring-info .ri-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+.ring-info .ri-label { color:var(--text-light); }
+.ring-info .ri-value { font-weight:700; }
+
+/* Exam countdown badge */
+.exam-item .exam-days { font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:999px; margin-left:auto; white-space:nowrap; }
+.exam-item .exam-days.soon { background:var(--danger-soft); color:var(--danger); }
+.exam-item .exam-days.near { background:var(--warning-soft); color:#c77800; }
+.exam-item .exam-days.far { background:var(--primary-soft); color:var(--primary-light); }
+
+/* Expense mini bars */
+.exp-bar-row { display:grid; grid-template-columns:100px 1fr auto; gap:10px; align-items:center; padding:8px 0; font-size:.85rem; }
+.exp-bar-row:not(:last-child) { border-bottom:1px dashed var(--border); }
+.exp-bar-row .ebr-label { color:var(--text-light); font-size:.78rem; }
+.exp-bar-row .ebr-bar { position:relative; height:8px; background:#eef1f5; border-radius:999px; overflow:hidden; }
+.exp-bar-row .ebr-fill { height:100%; border-radius:999px; transition:width .6s ease; }
+.exp-bar-row .ebr-val { font-weight:700; font-size:.85rem; min-width:72px; text-align:right; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:20px 12px; color:var(--text-light); }
+.empty-state .es-icon { font-size:1.8rem; opacity:.6; margin-bottom:6px; }
+.empty-state .es-msg { font-size:.85rem; }
+
 /* Expense breakdown — expandable rows */
 .exp-main { cursor:pointer; user-select:none; }
 .exp-main:hover { background:var(--primary-soft); }
@@ -381,12 +438,12 @@ tr:hover { background:var(--primary-soft); }
 <div class="container">
   <!-- Dashboard -->
   <div id="tab-dashboard" class="tab-content active">
+    <div id="dashHero"></div>
     <div class="stats" id="dashStats"></div>
     <div class="dash-grid">
       <div class="card full">
         <h2>ความก้าวหน้าการเรียน</h2>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
-        <div style="font-size:.8rem;color:var(--text-light);margin-top:4px" id="progressText"></div>
+        <div id="progressRing"></div>
       </div>
       <div class="card">
         <h2>วิชาที่กำลังเรียน / รอสอบ</h2>
@@ -1160,7 +1217,7 @@ function renderDashboard() {
   const data = getData();
   const regs = data.registrations;
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const emptyMsg = txt => `<p style="color:var(--text-light);font-size:.85rem">${txt}</p>`;
+  const emptyState = (icon, msg) => `<div class="empty-state"><div class="es-icon">${icon}</div><div class="es-msg">${msg}</div></div>`;
 
   // Classify courses
   const passedCodes = new Set();
@@ -1177,24 +1234,62 @@ function renderDashboard() {
   const totalRequired = 23;
   const pct = Math.round((passedCodes.size / totalRequired) * 100);
 
-  // Stat cards
+  // Hero: student info + current semester
+  const settings = data.settings || {};
+  const latestReg = [...regs].sort((a,b) => `${b.academicYear}/${b.semester}`.localeCompare(`${a.academicYear}/${a.semester}`))[0];
+  const currentSem = latestReg ? `ปี ${latestReg.academicYear} ภาค ${latestReg.semester}` : 'ยังไม่เริ่ม';
+  const studentLine = settings.studentId ? `รหัสนักศึกษา ${settings.studentId}` : 'นักศึกษานิติศาสตร์ มสธ.';
+  const batchLine = settings.batch ? `${settings.batch}${settings.batchCode ? ` · ${settings.batchCode}` : ''}` : '';
+  document.getElementById('dashHero').innerHTML = `<div class="dash-hero">
+    <div>
+      <div class="hero-greet">ยินดีต้อนรับ</div>
+      <div class="hero-name">${studentLine}</div>
+      ${batchLine ? `<div class="hero-meta">${batchLine}</div>` : ''}
+    </div>
+    <div class="hero-right">
+      <div class="hero-pill"><div class="pill-label">ภาคปัจจุบัน</div><div class="pill-value">${currentSem}</div></div>
+      <div class="hero-pill"><div class="pill-label">ความคืบหน้า</div><div class="pill-value">${pct}%</div></div>
+    </div>
+  </div>`;
+
+  // Stat cards with icons
   document.getElementById('dashStats').innerHTML = `
-    <div class="stat-card green"><div class="label">สอบผ่านแล้ว</div><div class="value">${passedCodes.size}/${totalRequired}</div><div class="sub">${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต</div></div>
-    <div class="stat-card blue"><div class="label">กำลังเรียน/รอสอบ</div><div class="value">${studyingCodes.size}</div><div class="sub">ชุดวิชา</div></div>
-    <div class="stat-card orange"><div class="label">ค่าใช้จ่ายรวม</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div>
-    <div class="stat-card${failedCodes.size > 0 ? ' red' : ''}"><div class="label">เหลืออีก</div><div class="value">${totalRequired - passedCodes.size}</div><div class="sub">ชุดวิชา${failedCodes.size > 0 ? ' (ไม่ผ่าน ' + failedCodes.size + ')' : ''}</div></div>
+    <div class="stat-card green"><div class="stat-icon">🎓</div><div class="stat-body"><div class="label">สอบผ่านแล้ว</div><div class="value">${passedCodes.size}/${totalRequired}</div><div class="sub">${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต</div></div></div>
+    <div class="stat-card blue"><div class="stat-icon">📖</div><div class="stat-body"><div class="label">กำลังเรียน/รอสอบ</div><div class="value">${studyingCodes.size}</div><div class="sub">ชุดวิชา</div></div></div>
+    <div class="stat-card orange"><div class="stat-icon">💰</div><div class="stat-body"><div class="label">ค่าใช้จ่ายรวม</div><div class="value">${totalFee.toLocaleString()}</div><div class="sub">บาท</div></div></div>
+    <div class="stat-card${failedCodes.size > 0 ? ' red' : ''}"><div class="stat-icon">${failedCodes.size > 0 ? '⚠️' : '📚'}</div><div class="stat-body"><div class="label">เหลืออีก</div><div class="value">${totalRequired - passedCodes.size}</div><div class="sub">ชุดวิชา${failedCodes.size > 0 ? ' (ไม่ผ่าน ' + failedCodes.size + ')' : ''}</div></div></div>
   `;
 
-  // Progress bar
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressFill').textContent = pct + '%';
-  document.getElementById('progressText').textContent = `ผ่านแล้ว ${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต (${pct}%)`;
+  // Circular progress ring
+  const circumference = 2 * Math.PI * 58;
+  const dashoffset = circumference * (1 - pct / 100);
+  const remaining = totalRequired - passedCodes.size - studyingCodes.size;
+  document.getElementById('progressRing').innerHTML = `<div class="ring-progress">
+    <svg class="ring-svg" viewBox="0 0 140 140">
+      <defs>
+        <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#1a73e8"/>
+          <stop offset="100%" stop-color="#1e8e3e"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring-track" cx="70" cy="70" r="58"/>
+      <circle class="ring-fill" cx="70" cy="70" r="58" stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}"/>
+      <text class="ring-text" x="70" y="66">${pct}%</text>
+      <text class="ring-subtext" x="70" y="88">${passedCodes.size * 6} / ${totalRequired * 6} หน่วยกิต</text>
+    </svg>
+    <div class="ring-info">
+      <div class="ri-item"><span><span class="ri-dot" style="background:var(--success)"></span><span class="ri-label">สอบผ่านแล้ว</span></span><span class="ri-value">${passedCodes.size} ชุดวิชา</span></div>
+      <div class="ri-item"><span><span class="ri-dot" style="background:var(--primary-light)"></span><span class="ri-label">กำลังเรียน</span></span><span class="ri-value">${studyingCodes.size} ชุดวิชา</span></div>
+      <div class="ri-item"><span><span class="ri-dot" style="background:#e8eaed"></span><span class="ri-label">ยังไม่เริ่ม</span></span><span class="ri-value">${Math.max(remaining, 0)} ชุดวิชา</span></div>
+      ${failedCodes.size > 0 ? `<div class="ri-item"><span><span class="ri-dot" style="background:var(--danger)"></span><span class="ri-label">ต้องลงใหม่</span></span><span class="ri-value">${failedCodes.size} ชุดวิชา</span></div>` : ''}
+    </div>
+  </div>`;
 
   // Current courses (กำลังเรียน/รอสอบ)
   const current = regs.filter(r => r.grade === 'pending' && !passedCodes.has(r.courseCode));
   const curEl = document.getElementById('currentCourses');
   if (current.length === 0) {
-    curEl.innerHTML = emptyMsg('ยังไม่มีวิชาที่กำลังเรียน');
+    curEl.innerHTML = emptyState('📖', 'ยังไม่มีวิชาที่กำลังเรียน');
   } else {
     curEl.innerHTML = current.map(r => {
       const badge = r.program === 'certificate' ? '<span class="badge badge-cert" style="font-size:.65rem;margin-left:6px">สัมฤทธิบัตร</span>' : '';
@@ -1202,18 +1297,23 @@ function renderDashboard() {
     }).join('');
   }
 
-  // Upcoming exams
+  // Upcoming exams — with countdown badge
+  const todayMs = new Date(new Date().toISOString().split('T')[0]).getTime();
   const today = new Date().toISOString().split('T')[0];
   const upcoming = regs.filter(r => r.examDate && r.examDate >= today && r.grade === 'pending').sort((a, b) => a.examDate.localeCompare(b.examDate));
   const exEl = document.getElementById('upcomingExams');
   if (upcoming.length === 0) {
-    exEl.innerHTML = emptyMsg('ยังไม่มีตารางสอบ');
+    exEl.innerHTML = emptyState('📅', 'ยังไม่มีตารางสอบ');
   } else {
     exEl.innerHTML = upcoming.slice(0, 5).map(r => {
       const d = new Date(r.examDate);
+      const days = Math.round((d.getTime() - todayMs) / 86400000);
+      const daysCls = days <= 7 ? 'soon' : days <= 30 ? 'near' : 'far';
+      const daysTxt = days === 0 ? 'วันนี้' : days === 1 ? 'พรุ่งนี้' : `อีก ${days} วัน`;
       return `<div class="exam-item">
         <div class="exam-date"><div class="day">${d.getDate()}</div><div class="month">${months[d.getMonth()]}</div></div>
-        <div class="exam-info"><div class="course">${r.courseCode} ${r.courseName}</div><div class="time">${r.examTime || '-'}</div></div>
+        <div class="exam-info" style="flex:1;min-width:0"><div class="course">${r.courseCode} ${r.courseName}</div><div class="time">${r.examTime || '-'}</div></div>
+        <span class="exam-days ${daysCls}">${daysTxt}</span>
       </div>`;
     }).join('');
   }
@@ -1221,7 +1321,7 @@ function renderDashboard() {
   // Pending transfers
   const ptEl = document.getElementById('pendingTransfers');
   if (pendingTransfer.length === 0) {
-    ptEl.innerHTML = emptyMsg('ไม่มีวิชารอโอน');
+    ptEl.innerHTML = emptyState('✅', 'ไม่มีวิชารอโอน');
   } else {
     ptEl.innerHTML = pendingTransfer.map(r => `<div class="exam-item">
       <div style="flex:1"><span style="font-weight:600">${r.courseCode}</span> ${r.courseName} <span class="badge badge-pending" style="font-size:.65rem">รอโอน</span></div>
@@ -1231,7 +1331,7 @@ function renderDashboard() {
   // Failed courses
   const fcEl = document.getElementById('failedCourses');
   if (failedCodes.size === 0) {
-    fcEl.innerHTML = emptyMsg('ไม่มี');
+    fcEl.innerHTML = emptyState('🎉', 'ไม่มีวิชาที่สอบไม่ผ่าน');
   } else {
     const failedRegs = [];
     failedCodes.forEach(code => {
@@ -1243,14 +1343,25 @@ function renderDashboard() {
     </div>`).join('');
   }
 
-  // Expense summary
+  // Expense summary with mini bars
   const esEl = document.getElementById('dashExpenseSummary');
-  esEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;font-size:.85rem">
-    <div style="padding:8px;background:var(--primary-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าชุดวิชา</div><div style="font-weight:700">${totalCourseFee.toLocaleString()}</div></div>
-    <div style="padding:8px;background:var(--warning-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าโอนวิชา</div><div style="font-weight:700">${totalTransferFee.toLocaleString()}</div></div>
-    <div style="padding:8px;background:#f0f2f5;border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าธรรมเนียม</div><div style="font-weight:700">${totalOtherFee.toLocaleString()}</div></div>
-    <div style="padding:8px;background:var(--success-soft);border-radius:var(--radius-sm);text-align:center"><div style="color:var(--text-light);font-size:.75rem">ค่าใช้จ่ายอื่น</div><div style="font-weight:700">${totalOtherExpenses.toLocaleString()}</div></div>
+  const maxExp = Math.max(totalCourseFee, totalTransferFee, totalOtherFee, totalOtherExpenses, 1);
+  const bar = (label, val, color) => `<div class="exp-bar-row">
+    <div class="ebr-label">${label}</div>
+    <div class="ebr-bar"><div class="ebr-fill" style="width:${(val/maxExp)*100}%;background:${color}"></div></div>
+    <div class="ebr-val">${val.toLocaleString()}</div>
   </div>`;
+  esEl.innerHTML = `
+    ${bar('ค่าชุดวิชา', totalCourseFee, 'var(--primary-light)')}
+    ${bar('ค่าโอนวิชา', totalTransferFee, 'var(--warning)')}
+    ${bar('ค่าธรรมเนียม', totalOtherFee, 'var(--gray)')}
+    ${bar('ค่าใช้จ่ายอื่น', totalOtherExpenses, 'var(--success)')}
+    <div class="exp-bar-row" style="border-top:2px solid var(--border);margin-top:4px;padding-top:12px">
+      <div class="ebr-label" style="font-weight:700;color:var(--primary)">รวมทั้งหมด</div>
+      <div></div>
+      <div class="ebr-val" style="color:var(--primary);font-size:1rem">${totalFee.toLocaleString()} บาท</div>
+    </div>
+  `;
 }
 
 // ===== CURRICULUM =====
