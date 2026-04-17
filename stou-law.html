@@ -245,6 +245,21 @@ tr:hover { background:var(--primary-soft); }
 .lock-card .lock-sub { font-size:.75rem; color:var(--text-light); margin-top:12px; }
 #appMain { display:none; }
 
+/* Course detail modal */
+.cd-header { padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.cd-header .cd-code { display:inline-block; background:var(--primary); color:#fff; padding:4px 12px; border-radius:6px; font-weight:700; font-size:.78rem; margin-bottom:6px; letter-spacing:.3px; }
+.cd-header .cd-name { font-size:1.1rem; font-weight:700; color:var(--primary); line-height:1.3; }
+.cd-header .cd-meta { font-size:.8rem; color:var(--text-light); margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.cd-tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:16px; gap:2px; }
+.cd-tab { background:none; border:none; padding:10px 18px; cursor:pointer; font-size:.88rem; color:var(--text-light); border-bottom:2px solid transparent; margin-bottom:-2px; transition:var(--transition); font-weight:500; }
+.cd-tab:hover { color:var(--primary); background:var(--primary-soft); border-radius:6px 6px 0 0; }
+.cd-tab.active { color:var(--primary-light); border-bottom-color:var(--primary-light); font-weight:700; }
+.cd-tab-content { display:none; }
+.cd-tab-content.active { display:block; }
+.cd-danger-box { padding:16px; background:var(--danger-soft); border:1px solid var(--danger); border-radius:var(--radius-sm); margin-bottom:14px; color:var(--danger); font-size:.88rem; }
+.cd-course-row { cursor:pointer; transition:var(--transition); }
+.cd-course-row:hover { background:var(--primary-soft) !important; }
+
 /* Curriculum filters */
 .cur-filters { display:grid; grid-template-columns:1fr 180px 200px; gap:10px; margin:14px 0 10px; align-items:stretch; }
 .cur-search { position:relative; display:flex; align-items:center; }
@@ -721,6 +736,60 @@ tr:hover { background:var(--primary-soft); }
 </div>
 
 <!-- Close #appMain -->
+</div>
+
+<!-- Course Detail Modal (ประวัติ / แก้ไข / ลบ) -->
+<div class="modal-overlay" id="courseDetailModal">
+  <div class="modal">
+    <div class="cd-header">
+      <div id="cdCode" class="cd-code"></div>
+      <div id="cdName" class="cd-name"></div>
+      <div id="cdMeta" class="cd-meta"></div>
+    </div>
+    <div class="cd-tabs">
+      <button type="button" class="cd-tab active" data-tab="history" onclick="switchCdTab('history')">ประวัติ</button>
+      <button type="button" class="cd-tab" data-tab="edit" onclick="switchCdTab('edit')">แก้ไข</button>
+      <button type="button" class="cd-tab" data-tab="delete" onclick="switchCdTab('delete')">ลบ</button>
+    </div>
+    <div id="cdHistoryTab" class="cd-tab-content active"></div>
+    <div id="cdEditTab" class="cd-tab-content">
+      <div class="form-grid" style="gap:10px">
+        <div class="form-group">
+          <label>รหัสวิชา *</label>
+          <input type="text" id="cdEditCode" placeholder="เช่น 41214">
+        </div>
+        <div class="form-group">
+          <label>หน่วยกิต</label>
+          <input type="number" id="cdEditCredits" value="6" min="1">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>ชื่อวิชา *</label>
+          <input type="text" id="cdEditName" placeholder="ชื่อวิชา">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>หมายเหตุ</label>
+          <input type="text" id="cdEditNote" placeholder="(ถ้ามี)">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveCourseDetailEdit()">บันทึกการแก้ไข</button>
+        <button class="btn btn-outline" onclick="closeModal('courseDetailModal')">ยกเลิก</button>
+      </div>
+    </div>
+    <div id="cdDeleteTab" class="cd-tab-content">
+      <div class="cd-danger-box">
+        ⚠️ คุณกำลังจะลบวิชา <strong id="cdDeleteName"></strong> ออกจากหลักสูตร<br>
+        การลบจะไม่กระทบกับประวัติการลงทะเบียน แต่วิชาจะหายไปจากโครงสร้างหลักสูตร
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger" onclick="confirmDeleteCourseDetail()">ยืนยันการลบ</button>
+        <button class="btn btn-outline" onclick="closeModal('courseDetailModal')">ยกเลิก</button>
+      </div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-end;border-top:1px solid var(--border);padding-top:12px;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal('courseDetailModal')">ปิด</button>
+    </div>
+  </div>
 </div>
 
 <!-- Course Edit Modal -->
@@ -1403,24 +1472,14 @@ function renderDashboard() {
 // ===== CURRICULUM =====
 function courseRowHtml(c, catKey, idx, groupName) {
   const st = getCourseStatus(c.code);
-  const editArgs = groupName
-    ? `'elective','${encodeURIComponent(groupName)}',${idx}`
-    : `'${catKey}','',${idx}`;
-  const delArgs = groupName
-    ? `'elective','${encodeURIComponent(groupName)}',${idx}`
-    : `'${catKey}','',${idx}`;
-  return `<tr>
+  const detailArgs = groupName
+    ? `'${c.code}','elective','${encodeURIComponent(groupName)}',${idx}`
+    : `'${c.code}','${catKey}','',${idx}`;
+  return `<tr class="cd-course-row" onclick="openCourseDetail(${detailArgs})">
     <td style="width:80px;font-weight:600">${c.code}</td>
     <td>${c.name}${c.note ? ' <span style="color:var(--warning);font-size:.75rem">(' + c.note + ')</span>' : ''}</td>
     <td style="width:60px;text-align:center">${c.credits}</td>
     <td style="width:100px">${statusBadge(st)}</td>
-    <td style="width:140px">
-      <div class="edit-row">
-        <button class="btn btn-sm btn-outline" onclick="showHistory('${c.code}')">ประวัติ</button>
-        <button class="btn btn-sm btn-outline" onclick="openEditCourse(${editArgs})" title="แก้ไข">แก้</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCourse(${delArgs})" title="ลบ">ลบ</button>
-      </div>
-    </td>
   </tr>`;
 }
 
@@ -2081,6 +2140,119 @@ function saveGrade() {
 }
 
 // History Modal
+// ===== COURSE DETAIL MODAL =====
+let cdContext = null; // {code, catKey, groupName, idx}
+
+function openCourseDetail(code, catKey, groupNameEncoded, idx) {
+  const groupName = groupNameEncoded ? decodeURIComponent(groupNameEncoded) : '';
+  const cur = getCurriculum();
+  const course = catKey === 'elective' ? cur.elective_groups[groupName]?.[idx] : cur[catKey]?.[idx];
+  if (!course) return;
+
+  cdContext = { code, catKey, groupName, idx };
+
+  // Populate header
+  const st = getCourseStatus(code);
+  document.getElementById('cdCode').textContent = course.code;
+  document.getElementById('cdName').textContent = course.name;
+  document.getElementById('cdMeta').innerHTML = `
+    <span>${course.credits} หน่วยกิต</span>
+    <span>·</span>
+    ${statusBadge(st)}
+    ${course.note ? `<span>·</span><span style="color:var(--warning)">${course.note}</span>` : ''}
+  `;
+
+  // Populate tabs — always default to history tab
+  switchCdTab('history');
+  renderCdHistory(code);
+
+  // Pre-fill edit form
+  document.getElementById('cdEditCode').value = course.code;
+  document.getElementById('cdEditName').value = course.name;
+  document.getElementById('cdEditCredits').value = course.credits;
+  document.getElementById('cdEditNote').value = course.note || '';
+
+  // Pre-fill delete tab
+  document.getElementById('cdDeleteName').textContent = `${course.code} ${course.name}`;
+
+  document.getElementById('courseDetailModal').classList.add('show');
+}
+
+function switchCdTab(tab) {
+  document.querySelectorAll('#courseDetailModal .cd-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.getElementById('cdHistoryTab').classList.toggle('active', tab === 'history');
+  document.getElementById('cdEditTab').classList.toggle('active', tab === 'edit');
+  document.getElementById('cdDeleteTab').classList.toggle('active', tab === 'delete');
+}
+
+function renderCdHistory(code) {
+  const data = getData();
+  const regs = data.registrations.filter(r => r.courseCode === code).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const el = document.getElementById('cdHistoryTab');
+  if (regs.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div><div class="es-msg">ยังไม่มีประวัติการลงทะเบียน</div></div>';
+  } else {
+    el.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>ครั้งที่</th><th>ปี/ภาค</th><th>รุ่น</th><th>โครงการ</th><th>ค่าชุดวิชา</th><th>ผลสอบ</th></tr></thead>
+      <tbody>${regs.map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${r.academicYear}/${r.semester}</td>
+        <td>${r.batch || '-'}${r.batchCode ? ` <span style="color:var(--text-light);font-size:.75rem">(${r.batchCode})</span>` : ''}</td>
+        <td>${r.program === 'certificate' ? 'สัมฤทธิบัตร' : 'ปกติ'}</td>
+        <td style="text-align:right">${(r.courseFee || 0).toLocaleString()}</td>
+        <td>${gradeBadge(r.grade)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+}
+
+function saveCourseDetailEdit() {
+  if (!cdContext) return;
+  const { catKey, groupName, idx } = cdContext;
+  const newCode = document.getElementById('cdEditCode').value.trim();
+  const newName = document.getElementById('cdEditName').value.trim();
+  const newCredits = parseInt(document.getElementById('cdEditCredits').value) || 6;
+  const newNote = document.getElementById('cdEditNote').value.trim();
+  if (!newCode || !newName) { alert('กรุณากรอกรหัสวิชาและชื่อวิชา'); return; }
+
+  const cur = getCurriculum();
+  const target = catKey === 'elective' ? cur.elective_groups[groupName][idx] : cur[catKey][idx];
+  target.code = newCode;
+  target.name = newName;
+  target.credits = newCredits;
+  target.note = newNote;
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  renderCurriculum();
+  populateCourseDropdown();
+  closeModal('courseDetailModal');
+  cdContext = null;
+}
+
+function confirmDeleteCourseDetail() {
+  if (!cdContext) return;
+  const { catKey, groupName, idx } = cdContext;
+  const cur = getCurriculum();
+  if (catKey === 'elective') {
+    cur.elective_groups[groupName].splice(idx, 1);
+    if (cur.elective_groups[groupName].length === 0) {
+      if (confirm(`กลุ่ม "${groupName}" ไม่มีวิชาเหลือแล้ว ต้องการลบกลุ่มด้วยหรือไม่?`)) {
+        delete cur.elective_groups[groupName];
+      }
+    }
+  } else {
+    cur[catKey].splice(idx, 1);
+  }
+  saveCurriculum(cur);
+  rebuildCourseLookup();
+  renderCurriculum();
+  populateCourseDropdown();
+  closeModal('courseDetailModal');
+  cdContext = null;
+}
+
 function showHistory(code) {
   const data = getData();
   const regs = data.registrations.filter(r => r.courseCode === code).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
