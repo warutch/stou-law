@@ -238,7 +238,8 @@ tr:hover { background:var(--primary-soft); }
 .lock-card { background:#fff; border-radius:20px; padding:48px 36px; max-width:400px; width:92%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.25); }
 .lock-card h1 { font-size:1.6rem; color:var(--primary); margin-bottom:4px; font-weight:800; letter-spacing:-.3px; }
 .lock-card p { font-size:.85rem; color:var(--text-light); margin-bottom:24px; }
-.lock-card input { width:100%; padding:14px; border:2px solid var(--border); border-radius:var(--radius-sm); font-size:1rem; margin-bottom:14px; text-align:center; letter-spacing:3px; transition:var(--transition); }
+.lock-card input { width:100%; padding:14px; border:2px solid var(--border); border-radius:var(--radius-sm); font-size:1rem; margin-bottom:12px; text-align:center; transition:var(--transition); }
+.lock-card input[type="password"] { letter-spacing:3px; }
 .lock-card input:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 4px rgba(26,115,232,.12); }
 .lock-card .btn { width:100%; padding:14px; font-size:1rem; font-weight:700; border-radius:var(--radius-sm); }
 .lock-card .lock-error { color:var(--danger); font-size:.85rem; margin-top:10px; min-height:20px; font-weight:500; }
@@ -495,8 +496,10 @@ tr:hover { background:var(--primary-soft); }
   <div class="lock-card">
     <h1>STOU Law</h1>
     <p id="lockMsg">ระบบการเรียนนิติศาสตร์ มสธ.</p>
-    <input type="password" id="lockPass" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="email" id="lockEmail" placeholder="อีเมล" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('lockPass').focus()">
+    <input type="password" id="lockPass" placeholder="รหัสผ่าน" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <button class="btn btn-outline" onclick="doRegister()" style="width:100%;margin-top:8px">สมัครบัญชีใหม่</button>
     <div class="lock-error" id="lockError"></div>
     <div class="lock-sub" id="lockSub">กำลังเชื่อมต่อ...</div>
   </div>
@@ -961,73 +964,68 @@ let DB_REF = null; // set after login
 let APP_DATA = { settings: {}, registrations: [] };
 let APP_CURRICULUM = null;
 
-// ===== AUTH / LOGIN =====
-async function hashPass(pass) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+// ===== AUTH / LOGIN (Firebase Email/Password) =====
+function setLockMsg(msg) { document.getElementById('lockSub').textContent = msg || ''; }
+function setLockError(msg) { document.getElementById('lockError').textContent = msg || ''; }
+
+function friendlyAuthError(e) {
+  const code = e && e.code;
+  const map = {
+    'auth/invalid-email': 'รูปแบบอีเมลไม่ถูกต้อง',
+    'auth/user-not-found': 'ไม่พบบัญชีนี้ — กดปุ่ม "สมัครบัญชีใหม่"',
+    'auth/wrong-password': 'รหัสผ่านไม่ถูกต้อง',
+    'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+    'auth/email-already-in-use': 'อีเมลนี้มีบัญชีอยู่แล้ว — กด "เข้าสู่ระบบ"',
+    'auth/weak-password': 'รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัวอักษร)',
+    'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้',
+    'auth/operation-not-allowed': 'ยังไม่ได้เปิด Email/Password ใน Firebase Console',
+    'auth/too-many-requests': 'พยายามเข้าระบบบ่อยเกินไป ลองใหม่อีกครั้ง',
+  };
+  return map[code] || (e && e.message) || 'เกิดข้อผิดพลาด';
 }
 
 async function doLogin() {
-  const pass = document.getElementById('lockPass').value.trim();
-  if (!pass) { document.getElementById('lockError').textContent = 'กรุณากรอกรหัสผ่าน'; return; }
-  document.getElementById('lockError').textContent = '';
-  document.getElementById('lockSub').textContent = 'กำลังตรวจสอบ...';
+  const email = document.getElementById('lockEmail').value.trim();
+  const pass = document.getElementById('lockPass').value;
+  setLockError('');
+  if (!email) { setLockError('กรุณากรอกอีเมล'); return; }
+  if (!pass) { setLockError('กรุณากรอกรหัสผ่าน'); return; }
+  setLockMsg('กำลังเข้าสู่ระบบ...');
   try {
-    // Anonymous auth
-    let user = auth.currentUser;
-    if (!user) { const cred = await auth.signInAnonymously(); user = cred.user; }
-    const hash = await hashPass(pass);
-    // Check stored password hash
-    const snap = await db.ref('auth/passHash').once('value');
-    const storedHash = snap.val();
-    if (!storedHash) {
-      // First time — set password
-      await db.ref('auth/passHash').set(hash);
-      localStorage.setItem('stou_session', hash);
-      enterApp();
-    } else if (storedHash === hash) {
-      localStorage.setItem('stou_session', hash);
-      enterApp();
-    } else {
-      document.getElementById('lockError').textContent = 'รหัสผ่านไม่ถูกต้อง';
-      document.getElementById('lockSub').textContent = '';
-    }
-  } catch(e) {
-    document.getElementById('lockError').textContent = 'เกิดข้อผิดพลาด: ' + e.message;
-    document.getElementById('lockSub').textContent = '';
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged will call enterApp
+  } catch (e) {
+    setLockError(friendlyAuthError(e));
+    setLockMsg('');
   }
 }
 
-function doLogout() {
-  localStorage.removeItem('stou_session');
+async function doRegister() {
+  const email = document.getElementById('lockEmail').value.trim();
+  const pass = document.getElementById('lockPass').value;
+  setLockError('');
+  if (!email) { setLockError('กรุณากรอกอีเมล'); return; }
+  if (!pass || pass.length < 6) { setLockError('รหัสผ่านอย่างน้อย 6 ตัวอักษร'); return; }
+  if (!confirm(`สมัครบัญชีใหม่ด้วยอีเมล "${email}" ใช่หรือไม่?`)) return;
+  setLockMsg('กำลังสมัคร...');
+  try {
+    await auth.createUserWithEmailAndPassword(email, pass);
+    // onAuthStateChanged will call enterApp
+  } catch (e) {
+    setLockError(friendlyAuthError(e));
+    setLockMsg('');
+  }
+}
+
+async function doLogout() {
+  try { await auth.signOut(); } catch(e) {}
   document.getElementById('appMain').style.display = 'none';
   document.getElementById('lockScreen').style.display = 'flex';
   document.getElementById('lockPass').value = '';
-  document.getElementById('lockError').textContent = '';
-  document.getElementById('lockSub').textContent = '';
-}
-
-async function checkSession() {
-  try {
-    let user = auth.currentUser;
-    if (!user) { const cred = await auth.signInAnonymously(); user = cred.user; }
-    const savedHash = localStorage.getItem('stou_session');
-    if (!savedHash) { document.getElementById('lockSub').textContent = 'ใส่รหัสผ่านเพื่อเข้าสู่ระบบ'; return; }
-    const snap = await db.ref('auth/passHash').once('value');
-    const storedHash = snap.val();
-    if (!storedHash) {
-      // No password set yet
-      document.getElementById('lockSub').textContent = 'ตั้งรหัสผ่านครั้งแรกเพื่อเริ่มใช้งาน';
-      document.getElementById('lockMsg').textContent = 'ตั้งรหัสผ่านใหม่';
-    } else if (storedHash === savedHash) {
-      enterApp();
-    } else {
-      localStorage.removeItem('stou_session');
-      document.getElementById('lockSub').textContent = 'ใส่รหัสผ่านเพื่อเข้าสู่ระบบ';
-    }
-  } catch(e) {
-    document.getElementById('lockSub').textContent = 'เชื่อมต่อ Firebase ไม่ได้: ' + e.message;
-  }
+  setLockError('');
+  setLockMsg('ใส่อีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ');
+  // Clear legacy session marker
+  localStorage.removeItem('stou_session');
 }
 
 async function enterApp() {
@@ -1040,6 +1038,17 @@ async function enterApp() {
   renderDashboard();
   resetRegForm();
 }
+
+// Listen for auth state — handles login, logout, and persisted sessions
+auth.onAuthStateChanged(user => {
+  if (user && user.email) {
+    enterApp();
+  } else {
+    document.getElementById('appMain').style.display = 'none';
+    document.getElementById('lockScreen').style.display = 'flex';
+    setLockMsg('ใส่อีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ');
+  }
+});
 
 // ===== FIREBASE DATA LAYER =====
 async function loadAllData() {
@@ -2790,7 +2799,7 @@ function importData(e) {
 }
 
 // ===== INIT =====
-checkSession();
+// Auth state listener (above) handles initial session restore
 </script>
 </body>
 </html>
