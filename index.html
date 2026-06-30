@@ -134,6 +134,8 @@ tr:hover { background:var(--primary-soft); }
 .exam-item { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
 .exam-item:last-child { border-bottom:none; }
 .exam-date { background:linear-gradient(135deg, var(--primary-light), #4285f4); color:#fff; border-radius:var(--radius-sm); padding:10px 14px; text-align:center; min-width:56px; box-shadow:0 2px 6px rgba(26,115,232,.3); }
+.exam-date.sat { background:linear-gradient(135deg, #8e44ad, #6c3483); box-shadow:0 2px 6px rgba(142,68,173,.35); }
+.exam-date.sun { background:linear-gradient(135deg, #d93025, #b3261e); box-shadow:0 2px 6px rgba(217,48,37,.35); }
 .exam-date .day { font-size:1.3rem; font-weight:800; }
 .exam-date .month { font-size:.68rem; font-weight:500; opacity:.9; }
 .exam-info .course { font-weight:600; font-size:.9rem; }
@@ -1485,8 +1487,10 @@ function renderDashboard() {
       const days = Math.round((d.getTime() - todayMs) / 86400000);
       const daysCls = days <= 7 ? 'soon' : days <= 30 ? 'near' : 'far';
       const daysTxt = days === 0 ? 'วันนี้' : days === 1 ? 'พรุ่งนี้' : `อีก ${days} วัน`;
+      const dow = d.getDay(); // 0=Sun, 6=Sat
+      const dowCls = dow === 6 ? 'sat' : dow === 0 ? 'sun' : '';
       return `<div class="exam-item">
-        <div class="exam-date"><div class="day">${d.getDate()}</div><div class="month">${months[d.getMonth()]}</div></div>
+        <div class="exam-date ${dowCls}"><div class="day">${d.getDate()}</div><div class="month">${months[d.getMonth()]}</div></div>
         <div class="exam-info" style="flex:1;min-width:0"><div class="course">${r.courseCode} ${r.courseName}</div><div class="time">${r.examTime || '-'}</div></div>
         <span class="exam-days ${daysCls}">${daysTxt}</span>
       </div>`;
