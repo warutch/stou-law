@@ -307,6 +307,31 @@ tr:hover { background:var(--primary-soft); }
 .oe-cat-badge.record_change { background:#f3e5f5; color:#6a1b9a; }
 .oe-cat-badge.other { background:#eceff1; color:#455a64; }
 
+/* Study plan */
+.plan-sem-card { border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; background:#fff; transition:var(--transition); }
+.plan-sem-card:hover { box-shadow:var(--shadow-md); }
+.plan-sem-header { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; background:linear-gradient(135deg, var(--primary), #1a3a5c); color:#fff; flex-wrap:wrap; }
+.plan-sem-header .psh-title { font-weight:700; font-size:.95rem; }
+.plan-sem-header .psh-meta { font-size:.78rem; opacity:.85; }
+.plan-sem-header .psh-right { display:flex; gap:6px; align-items:center; }
+.plan-sem-header .psh-right button { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.22); color:#fff; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:.75rem; transition:var(--transition); }
+.plan-sem-header .psh-right button:hover { background:rgba(255,255,255,.28); }
+.plan-sem-header .psh-right .psh-del { background:rgba(217,48,37,.6); border-color:rgba(217,48,37,.5); }
+.plan-sem-header .psh-right .psh-del:hover { background:rgba(217,48,37,.85); }
+.plan-sem-body { padding:0; }
+.plan-course-row { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); font-size:.88rem; transition:var(--transition); }
+.plan-course-row:last-child { border-bottom:none; }
+.plan-course-row:hover { background:var(--primary-soft); }
+.plan-course-row .pcr-code { font-weight:700; min-width:60px; color:var(--primary); }
+.plan-course-row .pcr-name { flex:1; min-width:0; }
+.plan-course-row .pcr-status { flex-shrink:0; }
+.plan-course-row .pcr-remove { background:none; border:none; color:var(--gray); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:50%; transition:var(--transition); flex-shrink:0; }
+.plan-course-row .pcr-remove:hover { background:var(--danger-soft); color:var(--danger); }
+.plan-sem-footer { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:#fafbfc; border-top:1px solid var(--border); font-size:.85rem; flex-wrap:wrap; gap:6px; }
+.plan-sem-footer .psf-totals { color:var(--text-light); }
+.plan-sem-footer .psf-totals strong { color:var(--primary); font-weight:700; }
+.plan-empty-sem { padding:18px; text-align:center; color:var(--text-light); font-size:.85rem; }
+
 /* Course detail modal */
 .cd-header { padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:14px; }
 .cd-header .cd-code { display:inline-block; background:var(--primary); color:#fff; padding:4px 12px; border-radius:6px; font-weight:700; font-size:.78rem; margin-bottom:6px; letter-spacing:.3px; }
@@ -423,7 +448,7 @@ tr:hover { background:var(--primary-soft); }
   .nav-right { order: 2; width: auto; flex: 0 0 auto; padding: 6px 0; gap: 4px; margin-left: auto; flex-wrap: nowrap; }
   .nav-right button { padding: 5px 9px; font-size: .7rem; }
   .nav::after { content: ''; order: 3; flex-basis: 100%; height: 0; width: 100%; }
-  .nav-btn { order: 4; flex: 1 0 25%; padding: 9px 2px; font-size: .76rem; text-align: center; white-space: nowrap; border-radius: 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .nav-btn { order: 4; flex: 1 0 20%; padding: 9px 2px; font-size: .72rem; text-align: center; white-space: nowrap; border-radius: 0; border-top: 1px solid rgba(255,255,255,.12); }
 
   .container { padding: 12px 10px; }
   .card { padding: 14px; margin-bottom: 14px; border-radius: 10px; }
@@ -514,6 +539,7 @@ tr:hover { background:var(--primary-soft); }
   <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
   <button class="nav-btn" onclick="showTab('curriculum')">หลักสูตร</button>
   <button class="nav-btn" onclick="showTab('registration')">ลงทะเบียน</button>
+  <button class="nav-btn" onclick="showTab('plan')">วางแผน</button>
   <button class="nav-btn" onclick="showTab('expenses')">ค่าใช้จ่าย</button>
   <div class="nav-right">
     <button onclick="exportData()" title="Export ข้อมูล">Export</button>
@@ -689,6 +715,19 @@ tr:hover { background:var(--primary-soft); }
     </div>
   </div>
 
+  <!-- Study Plan -->
+  <div id="tab-plan" class="tab-content">
+    <div id="planSummary" class="reg-stats"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <h2 style="margin-bottom:0"><span class="card-title-icon">🗓️ วางแผนการเรียน</span></h2>
+        <button class="btn btn-sm btn-primary" onclick="openAddPlanSemester()">+ เพิ่มภาคการศึกษา</button>
+      </div>
+      <p style="font-size:.85rem;color:var(--text-light);margin-bottom:14px">วางแผนล่วงหน้าว่าแต่ละภาคการศึกษาจะลงเรียนชุดวิชาอะไรบ้าง เพื่อดูความคืบหน้าและประมาณการค่าใช้จ่าย</p>
+      <div id="planContent"></div>
+    </div>
+  </div>
+
   <!-- Expenses -->
   <div id="tab-expenses" class="tab-content">
     <div class="stats" id="expenseStats"></div>
@@ -802,6 +841,48 @@ tr:hover { background:var(--primary-soft); }
 </div>
 
 <!-- Close #appMain -->
+</div>
+
+<!-- Add Plan Semester Modal -->
+<div class="modal-overlay" id="addPlanSemModal">
+  <div class="modal" style="max-width:380px">
+    <h3>เพิ่มภาคการศึกษา</h3>
+    <div class="form-grid" style="gap:10px">
+      <div class="form-group">
+        <label>ปีการศึกษา</label>
+        <input type="text" id="planSemYear" placeholder="เช่น 2569">
+      </div>
+      <div class="form-group">
+        <label>ภาค</label>
+        <select id="planSemSem">
+          <option value="1">ภาคต้น (1)</option>
+          <option value="2">ภาคปลาย (2)</option>
+          <option value="summer">ภาคฤดูร้อน</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('addPlanSemModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePlanSemester()">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Plan Course Modal -->
+<div class="modal-overlay" id="addPlanCourseModal">
+  <div class="modal" style="max-width:480px">
+    <h3>เพิ่มชุดวิชาในแผน</h3>
+    <p id="addPlanCourseSemLabel" style="font-size:.85rem;color:var(--text-light);margin-bottom:12px"></p>
+    <div class="form-group">
+      <label>เลือกชุดวิชา</label>
+      <select id="planCourseSelect" size="10" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem"></select>
+    </div>
+    <p style="font-size:.78rem;color:var(--text-light);margin-top:8px">วิชาที่สอบผ่านแล้วหรืออยู่ในแผนภาคอื่นจะไม่แสดงในรายการ</p>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('addPlanCourseModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePlanCourse()">เพิ่ม</button>
+    </div>
+  </div>
 </div>
 
 <!-- Course Detail Modal (ประวัติ / แก้ไข / ลบ) -->
@@ -1350,11 +1431,12 @@ function showTab(name) {
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   const btns = document.querySelectorAll('.nav-btn');
-  const idx = { dashboard: 0, curriculum: 1, registration: 2, expenses: 3 }[name];
+  const idx = { dashboard: 0, curriculum: 1, registration: 2, plan: 3, expenses: 4 }[name];
   if (btns[idx]) btns[idx].classList.add('active');
   if (name === 'dashboard') renderDashboard();
   if (name === 'curriculum') renderCurriculum();
   if (name === 'registration') renderRegistrations();
+  if (name === 'plan') renderPlan();
   if (name === 'expenses') renderExpenses();
 }
 
@@ -2444,6 +2526,180 @@ function toggleExpDetail(row) {
 }
 
 // Calculate total expenses correctly (avoid double-counting group fees)
+// ===== STUDY PLAN =====
+function getStudyPlan() {
+  const data = getData();
+  if (!data.studyPlan) data.studyPlan = { semesters: [] };
+  if (!Array.isArray(data.studyPlan.semesters)) data.studyPlan.semesters = [];
+  return data.studyPlan;
+}
+
+function saveStudyPlan(plan) {
+  const data = getData();
+  data.studyPlan = plan;
+  saveData(data);
+}
+
+function getAllCurriculumCourses() {
+  const cur = getCurriculum();
+  return [
+    ...cur.ge_required,
+    ...cur.ge_elective_lang,
+    ...cur.ge_elective_social,
+    ...cur.ge_elective_human,
+    ...cur.core,
+    ...Object.values(cur.elective_groups).flat(),
+  ];
+}
+
+let addPlanCourseTargetSemId = null;
+
+function openAddPlanSemester() {
+  document.getElementById('planSemYear').value = '';
+  document.getElementById('planSemSem').value = '1';
+  document.getElementById('addPlanSemModal').classList.add('show');
+}
+
+function savePlanSemester() {
+  const year = document.getElementById('planSemYear').value.trim();
+  const sem = document.getElementById('planSemSem').value;
+  if (!year) { alert('กรุณากรอกปีการศึกษา'); return; }
+  const plan = getStudyPlan();
+  if (plan.semesters.find(s => s.year === year && s.sem === sem)) {
+    alert('ภาคนี้มีในแผนแล้ว');
+    return;
+  }
+  plan.semesters.push({ id: genId(), year, sem, courseCodes: [] });
+  plan.semesters.sort((a, b) => `${a.year}-${a.sem}`.localeCompare(`${b.year}-${b.sem}`));
+  saveStudyPlan(plan);
+  closeModal('addPlanSemModal');
+  renderPlan();
+}
+
+function deletePlanSemester(id) {
+  if (!confirm('ลบภาคการศึกษานี้ออกจากแผน?')) return;
+  const plan = getStudyPlan();
+  plan.semesters = plan.semesters.filter(s => s.id !== id);
+  saveStudyPlan(plan);
+  renderPlan();
+}
+
+function openAddPlanCourse(semId) {
+  const plan = getStudyPlan();
+  const sem = plan.semesters.find(s => s.id === semId);
+  if (!sem) return;
+  addPlanCourseTargetSemId = semId;
+  document.getElementById('addPlanCourseSemLabel').textContent = `ปี ${sem.year} ภาค ${sem.sem === 'summer' ? 'ฤดูร้อน' : sem.sem}`;
+
+  // Build select options: exclude passed and already-planned
+  const plannedCodes = new Set(plan.semesters.flatMap(s => s.courseCodes));
+  const allCourses = getAllCurriculumCourses();
+  const available = allCourses.filter(c => {
+    if (plannedCodes.has(c.code)) return false;
+    if (getCourseStatus(c.code) === 'passed') return false;
+    return true;
+  });
+
+  const select = document.getElementById('planCourseSelect');
+  if (available.length === 0) {
+    select.innerHTML = '<option disabled>ไม่มีชุดวิชาที่สามารถเพิ่มได้</option>';
+  } else {
+    select.innerHTML = available.map(c => `<option value="${c.code}">${c.code} — ${c.name} (${c.credits} หน่วยกิต)</option>`).join('');
+  }
+  document.getElementById('addPlanCourseModal').classList.add('show');
+}
+
+function savePlanCourse() {
+  const select = document.getElementById('planCourseSelect');
+  const code = select.value;
+  if (!code || !addPlanCourseTargetSemId) return;
+  const plan = getStudyPlan();
+  const sem = plan.semesters.find(s => s.id === addPlanCourseTargetSemId);
+  if (!sem) return;
+  if (!sem.courseCodes.includes(code)) sem.courseCodes.push(code);
+  saveStudyPlan(plan);
+  closeModal('addPlanCourseModal');
+  addPlanCourseTargetSemId = null;
+  renderPlan();
+}
+
+function removePlanCourse(semId, code) {
+  const plan = getStudyPlan();
+  const sem = plan.semesters.find(s => s.id === semId);
+  if (!sem) return;
+  sem.courseCodes = sem.courseCodes.filter(c => c !== code);
+  saveStudyPlan(plan);
+  renderPlan();
+}
+
+function renderPlan() {
+  const plan = getStudyPlan();
+  const allCourses = getAllCurriculumCourses();
+  const codeToCourse = Object.fromEntries(allCourses.map(c => [c.code, c]));
+
+  // Summary stats
+  const totalPlannedCredits = plan.semesters.reduce((s, sem) =>
+    s + sem.courseCodes.reduce((cs, code) => cs + (codeToCourse[code]?.credits || 6), 0), 0);
+  const totalPlannedCourses = plan.semesters.reduce((s, sem) => s + sem.courseCodes.length, 0);
+  const passedCodes = new Set(getData().registrations
+    .filter(r => r.grade === 'H' || r.grade === 'S' || r.grade === 'S*')
+    .map(r => r.courseCode));
+  const passedCount = passedCodes.size;
+  const remainingToPlan = Math.max(0, 23 - passedCount - totalPlannedCourses);
+  const estCost = totalPlannedCourses * 2500;
+
+  document.getElementById('planSummary').innerHTML = `
+    <div class="reg-stat-card"><div class="rsc-icon">📅</div><div class="rsc-body"><div class="rsc-value">${plan.semesters.length}</div><div class="rsc-label">ภาคในแผน</div></div></div>
+    <div class="reg-stat-card"><div class="rsc-icon">📚</div><div class="rsc-body"><div class="rsc-value">${totalPlannedCourses}</div><div class="rsc-label">ชุดวิชาที่วางไว้</div></div></div>
+    <div class="reg-stat-card"><div class="rsc-icon">🎯</div><div class="rsc-body"><div class="rsc-value" style="color:${remainingToPlan === 0 ? 'var(--success)' : 'var(--warning)'}">${remainingToPlan}</div><div class="rsc-label">ยังต้องวางอีก</div></div></div>
+    <div class="reg-stat-card"><div class="rsc-icon">💰</div><div class="rsc-body"><div class="rsc-value">${estCost.toLocaleString()}</div><div class="rsc-label">ค่าใช้จ่ายโดยประมาณ</div></div></div>
+  `;
+
+  // Semesters list
+  const container = document.getElementById('planContent');
+  if (plan.semesters.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🗓️</div><div class="es-msg">ยังไม่มีภาคการศึกษาในแผน — กด "+ เพิ่มภาคการศึกษา" เพื่อเริ่มต้น</div></div>';
+    return;
+  }
+
+  container.innerHTML = plan.semesters.map(sem => {
+    const semLabel = `ปี ${sem.year} ภาค ${sem.sem === 'summer' ? 'ฤดูร้อน' : sem.sem}`;
+    const courses = sem.courseCodes.map(code => codeToCourse[code]).filter(Boolean);
+    const semCredits = courses.reduce((s, c) => s + (c.credits || 6), 0);
+    const semCost = sem.courseCodes.length * 2500;
+    const rowsHtml = sem.courseCodes.length === 0
+      ? '<div class="plan-empty-sem">ยังไม่มีชุดวิชาในภาคนี้ กดปุ่ม "+ เพิ่มชุดวิชา" ด้านล่าง</div>'
+      : sem.courseCodes.map(code => {
+          const c = codeToCourse[code];
+          const st = getCourseStatus(code);
+          const name = c ? c.name : '(ไม่พบในหลักสูตร)';
+          return `<div class="plan-course-row">
+            <span class="pcr-code">${code}</span>
+            <span class="pcr-name">${name}</span>
+            <span class="pcr-status">${statusBadge(st)}</span>
+            <button class="pcr-remove" onclick="removePlanCourse('${sem.id}','${code}')" title="ลบออกจากแผน">✕</button>
+          </div>`;
+        }).join('');
+    return `<div class="plan-sem-card">
+      <div class="plan-sem-header">
+        <div>
+          <div class="psh-title">${semLabel}</div>
+          <div class="psh-meta">${sem.courseCodes.length} ชุดวิชา · ${semCredits} หน่วยกิต</div>
+        </div>
+        <div class="psh-right">
+          <button onclick="openAddPlanCourse('${sem.id}')">+ เพิ่มชุดวิชา</button>
+          <button class="psh-del" onclick="deletePlanSemester('${sem.id}')">ลบภาค</button>
+        </div>
+      </div>
+      <div class="plan-sem-body">${rowsHtml}</div>
+      <div class="plan-sem-footer">
+        <span class="psf-totals">รวม <strong>${semCredits}</strong> หน่วยกิต</span>
+        <span class="psf-totals">ประมาณ <strong>${semCost.toLocaleString()}</strong> บาท</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function calcTotalExpenses(regs) {
   const totalCourseFee = regs.reduce((s, r) => s + (Number(r.courseFee) || 0), 0);
   const totalTransferFee = regs.reduce((s, r) => s + (Number(r.transferFee) || 0), 0);
