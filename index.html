@@ -658,7 +658,10 @@ tr:hover { background:var(--primary-soft); }
     </div>
 
     <div class="card">
-      <h2><span class="card-title-icon">📋 รายการลงทะเบียนทั้งหมด</span></h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <h2 style="margin-bottom:0"><span class="card-title-icon">📋 รายการลงทะเบียนทั้งหมด</span></h2>
+        <button class="btn btn-sm btn-outline" id="regEditToggleBtn" onclick="toggleRegEditMode()">✏️ แก้ไขรายการ</button>
+      </div>
       <div style="margin-bottom:12px">
         <select id="filterSemester" onchange="renderRegistrations()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem">
           <option value="">ทุกภาคการศึกษา</option>
@@ -2144,6 +2147,22 @@ function resetRegForm() {
   setFeeItems(null);
 }
 
+let regEditMode = false;
+function toggleRegEditMode() {
+  regEditMode = !regEditMode;
+  const btn = document.getElementById('regEditToggleBtn');
+  if (btn) {
+    if (regEditMode) {
+      btn.textContent = '✓ เสร็จสิ้น';
+      btn.className = 'btn btn-sm btn-primary';
+    } else {
+      btn.textContent = '✏️ แก้ไขรายการ';
+      btn.className = 'btn btn-sm btn-outline';
+    }
+  }
+  renderRegistrations();
+}
+
 function renderRegistrations() {
   const data = getData();
   let regs = [...data.registrations].sort((a, b) => {
@@ -2199,9 +2218,11 @@ function renderRegistrations() {
     <td>${r.examDate || '-'}</td>
     <td>${gradeBadge(r.grade)}${r.program==='certificate' && (r.grade==='H'||r.grade==='S'||r.grade==='S*') ? (r.transferStatus==='transferred' ? ' <span class="badge badge-passed" style="font-size:.65rem">โอนแล้ว</span>' : ' <span class="badge badge-pending" style="font-size:.65rem">รอโอน</span>') : ''}</td>
     <td>
-      <button class="btn btn-sm btn-primary" onclick="openGradeModal('${r.id}')" title="บันทึกผล">ผล</button>
-      <button class="btn btn-sm btn-outline" onclick="editRegistration('${r.id}')" title="แก้ไข">แก้</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteRegistration('${r.id}')" title="ลบ">ลบ</button>
+      <div class="edit-row">
+        <button class="btn btn-sm btn-primary" onclick="openGradeModal('${r.id}')" title="บันทึกผล">ผล</button>
+        ${regEditMode ? `<button class="btn btn-sm btn-outline" onclick="editRegistration('${r.id}')" title="แก้ไข">แก้</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRegistration('${r.id}')" title="ลบ">ลบ</button>` : ''}
+      </div>
     </td>
   </tr>`).join('');
 }
